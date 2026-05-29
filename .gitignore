@@ -1,0 +1,38 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build output
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# vite cache
+node_modules/.vite
+
+# local verification artifacts
+.verify*.mjs
+.verify*.png
+.tmp-shot.png
+.deep-out.txt

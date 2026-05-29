@@ -1,0 +1,47 @@
+{
+  "name": "ultra-collage",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A production-grade, performant web-based photo collage maker.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "file-saver": "^2.0.5",
+    "idb-keyval": "^6.2.1",
+    "justified-layout": "^4.1.0",
+    "konva": "^9.3.16",
+    "lucide-react": "^0.460.0",
+    "nanoid": "^5.0.9",
+    "react": "^18.3.1",
+    "react-colorful": "^5.6.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "tailwind-merge": "^2.5.5",
+    "zundo": "^2.3.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.1.0",
+    "@types/file-saver": "^2.0.7",
+    "@types/node": "^22.19.19",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "happy-dom": "^15.11.7",
+    "immer": "^10.1.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}
