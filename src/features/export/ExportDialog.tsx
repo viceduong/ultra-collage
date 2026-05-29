@@ -8,7 +8,7 @@ import { exportCollage } from './exportCollage'
 export function ExportDialog({ onClose }: { onClose: () => void }) {
   const doc = useEditor((s) => s.doc)
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
-  const [scale, setScale] = useState(2)
+  const [scale, setScale] = useState(1)
   const [quality, setQuality] = useState(0.92)
   const [transparent, setTransparent] = useState(false)
   const [busy, setBusy] = useState(false)
