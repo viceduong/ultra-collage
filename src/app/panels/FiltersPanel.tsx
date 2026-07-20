@@ -9,11 +9,10 @@ import { cn } from '@/lib/utils'
 export function FiltersPanel() {
   const selection = useEditor((s) => s.selection)
   const tree = useEditor((s) => s.doc.layout.tree)
-  const globalFilters = useEditor((s) => s.doc.style.cellFilters)
   const setCellFilters = useEditor((s) => s.setCellFilters)
 
   const cell = selection.kind === 'cell' ? findCell(tree, selection.id) : null
-  const filters = cell?.filters ?? globalFilters
+  const filters = cell?.filters ?? { ...DEFAULT_FILTERS }
   const reset = () => setCellFilters({ ...DEFAULT_FILTERS })
 
   return (
@@ -37,9 +36,7 @@ export function FiltersPanel() {
 
       <div className="panel-section space-y-4">
         <div className="flex items-center justify-between">
-          <span className="panel-label !mb-0">
-            {selection.kind === 'cell' ? 'Adjustments (this cell)' : 'Adjustments'}
-          </span>
+          <span className="panel-label !mb-0">Adjustments</span>
           <button
             className="text-xs text-primary hover:underline"
             onClick={reset}

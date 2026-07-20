@@ -213,7 +213,7 @@ export const useEditor = create<EditorState>()(
             const apply = (n: CollageDoc['layout']['tree']): CollageDoc['layout']['tree'] => {
               if (n.kind === 'cell') {
                 if (n.id === cellId) {
-                  const existing = n.filters ?? { ...s.doc.style.cellFilters }
+                  const existing = n.filters ?? { ...DEFAULT_FILTERS }
                   return { ...n, filters: { ...existing, ...patch } }
                 }
                 return n

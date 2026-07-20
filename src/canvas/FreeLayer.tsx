@@ -86,7 +86,8 @@ export function FreeLayer({ layer, selected, interactive, onSelect }: FreeLayerP
 type CommonProps = Record<string, unknown>
 
 function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common: CommonProps; onTransformEnd: () => void }) {
-  const startEditingText = useEditor((s) => s.startEditingText)
+  const updateLayer = useEditor((s) => s.updateLayer)
+  const select = useEditor((s) => s.select)
   return (
     <Text
       {...common}
@@ -105,7 +106,13 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
       shadowBlur={layer.shadow ? 8 : 0}
       shadowOffsetY={layer.shadow ? 3 : 0}
       onTransformEnd={onTransformEnd}
-      onDblClick={() => startEditingText(layer.id)}
+      onDblClick={() => {
+        const next = window.prompt('Edit text', layer.text)
+        if (next != null) {
+          updateLayer(layer.id, { text: next })
+          select({ kind: 'layer', id: layer.id })
+        }
+      }}
     />
   )
 }
