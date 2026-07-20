@@ -2,12 +2,19 @@ import { Slider } from '@/components/ui/Slider'
 import { useEditor } from '@/state/store'
 import { applyPreset, FILTER_PRESETS } from '@/features/filters/filters'
 import { DEFAULT_FILTERS } from '@/types'
+import { findCell } from '@/layout/tree'
 import { cn } from '@/lib/utils'
 
-/** Adjustments applied uniformly to all grid cells, plus one-tap presets. */
+/** Adjustments applied per-cell (when a cell is selected) or globally. */
 export function FiltersPanel() {
-  const filters = useEditor((s) => s.doc.style.cellFilters)
+  const selection = useEditor((s) => s.selection)
+  const tree = useEditor((s) => s.doc.layout.tree)
+  const globalFilters = useEditor((s) => s.doc.style.cellFilters)
   const setCellFilters = useEditor((s) => s.setCellFilters)
+
+  const cell = selection.kind === 'cell' ? findCell(tree, selection.id) : null
+  const filters = cell?.filters ?? globalFilters
+  const reset = () => setCellFilters({ ...DEFAULT_FILTERS })
 
   return (
     <div>
@@ -30,10 +37,12 @@ export function FiltersPanel() {
 
       <div className="panel-section space-y-4">
         <div className="flex items-center justify-between">
-          <span className="panel-label !mb-0">Adjustments</span>
+          <span className="panel-label !mb-0">
+            {selection.kind === 'cell' ? 'Adjustments (this cell)' : 'Adjustments'}
+          </span>
           <button
             className="text-xs text-primary hover:underline"
-            onClick={() => setCellFilters({ ...DEFAULT_FILTERS })}
+            onClick={reset}
           >
             Reset
           </button>

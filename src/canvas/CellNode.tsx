@@ -91,7 +91,10 @@ export function CellNode({ layout, style, selected, interactive, onSelect, cells
   // Filters apply only to the selected cell; when nothing is selected they apply globally.
   const cellSelection = useEditor((s) => s.selection)
   const applyFilters = cellSelection.kind !== 'cell' || cellSelection.id === cell?.id
-  const filters = applyFilters ? style.cellFilters : { ...DEFAULT_FILTERS }
+  // Use per-cell filters if set, otherwise global.
+  const globalFilters = style.cellFilters
+  const effectiveFilters = cell?.filters ?? globalFilters
+  const filters = applyFilters ? effectiveFilters : { ...DEFAULT_FILTERS }
   const placement = useMemo(() => {
     if (!cell || !asset) return null
     return fitCellImage(rect, { width: asset.width, height: asset.height }, cell.transform)

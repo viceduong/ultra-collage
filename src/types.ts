@@ -38,7 +38,8 @@ export interface CellNode {
   id: CellId
   assetId?: AssetId
   transform: CellTransform
-  /** Optional per-cell background tint shown when no image is assigned. */
+  /** Per-cell filter overrides (falls back to style.cellFilters when absent). */
+  filters?: FilterState
 }
 
 export interface SplitNodeT {

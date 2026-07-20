@@ -157,6 +157,7 @@ export function CollageStage() {
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragLeave={() => setDropCell(null)}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <Stage
         ref={stageRef}
@@ -265,9 +266,9 @@ function TextEditor({
   const box = containerRef.current.getBoundingClientRect()
   const left = box.left + stageX + textLayer.x * stageZoom
   const top = box.top + stageY + textLayer.y * stageZoom
-  const width = Math.max(60, textLayer.width * stageZoom)
-  const height = Math.max(28, textLayer.height * stageZoom)
-  const fontSize = Math.max(12, textLayer.fontSize * stageZoom * 0.65)
+  const width = textLayer.width * stageZoom
+  const height = textLayer.height * stageZoom
+  const fontSize = textLayer.fontSize * stageZoom
 
   return (
     <textarea
@@ -278,10 +279,8 @@ function TextEditor({
       onKeyDown={handleKeyDown}
       style={{
         position: 'fixed',
-        left,
-        top,
-        width,
-        height,
+        left, top,
+        width, height,
         fontSize,
         lineHeight: textLayer.lineHeight,
         fontFamily: textLayer.fontFamily,
@@ -289,6 +288,7 @@ function TextEditor({
         fontWeight: textLayer.fontStyle?.includes('bold') ? 'bold' : 'normal',
         textAlign: textLayer.align,
         color: textLayer.fill,
+        letterSpacing: textLayer.letterSpacing,
         caretColor: textLayer.fill,
         border: 'none',
         background: 'transparent',
@@ -299,6 +299,8 @@ function TextEditor({
         margin: 0,
         zIndex: 100,
         cursor: 'text',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
       }}
     />
   )

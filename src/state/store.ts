@@ -207,7 +207,24 @@ export const useEditor = create<EditorState>()(
       setStyle: (patch) => set((s) => void Object.assign(s.doc.style, patch)),
 
       setCellFilters: (patch) =>
-        set((s) => void Object.assign(s.doc.style.cellFilters, patch)),
+        set((s) => {
+          if (s.selection.kind === 'cell') {
+            const cellId = s.selection.id
+            const apply = (n: CollageDoc['layout']['tree']): CollageDoc['layout']['tree'] => {
+              if (n.kind === 'cell') {
+                if (n.id === cellId) {
+                  const existing = n.filters ?? { ...s.doc.style.cellFilters }
+                  return { ...n, filters: { ...existing, ...patch } }
+                }
+                return n
+              }
+              return { ...n, a: apply(n.a), b: apply(n.b) }
+            }
+            s.doc.layout.tree = apply(s.doc.layout.tree)
+          } else {
+            Object.assign(s.doc.style.cellFilters, patch)
+          }
+        }),
 
       setBackground: (bg) => set((s) => void (s.doc.background = bg)),
 
