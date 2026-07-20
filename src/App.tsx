@@ -46,15 +46,11 @@ export default function App() {
       })
       .catch(console.error)
 
-    // Close handler: show modal, then close on confirm.
-    let isClosing = false
-    import('@tauri-apps/api/window')
-      .then(async ({ getCurrentWindow }) => {
-        const unsub = await getCurrentWindow().onCloseRequested(async (event) => {
-          // Second invocation from our own close() — let through.
-          if (isClosing) return
-          event.preventDefault()
-
+    // Close handler: listen for save-dialog event from Rust backend.
+    // Rust calls api.prevent_close() then emits this event.
+    import('@tauri-apps/api/event')
+      .then(async ({ listen }) => {
+        const unsub = await listen('save-dialog', async () => {
           setShowSaveModal(true)
           const choice = await triggerSaveConfirm()
           setShowSaveModal(false)
@@ -67,8 +63,9 @@ export default function App() {
             await saveDoc(doc)
           }
 
-          isClosing = true
-          await getCurrentWindow().close()
+          // Tell Rust to destroy() the window (no more CloseRequested loops).
+          const { invoke } = await import('@tauri-apps/api/core')
+          await invoke('close_app')
         })
         unlisteners.push(unsub)
       })

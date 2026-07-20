@@ -2,6 +2,8 @@ use base64::Engine;
 use image::GenericImageView;
 use serde::Serialize;
 use std::path::PathBuf;
+use tauri::Emitter;
+use tauri::Manager;
 
 #[derive(Serialize)]
 struct ImageInfo {
@@ -56,6 +58,18 @@ fn read_image_info(path: String) -> Result<ImageInfo, String> {
     })
 }
 
+/// Forcefully close the main window (skips the close-request dialog).
+/// Called from the frontend after the user confirms Save/Don't Save.
+#[tauri::command]
+async fn close_app(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        // destroy() closes the window without emitting CloseRequested,
+        // avoiding the close-loop deadlock entirely.
+        window.destroy().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -72,7 +86,15 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_image_info])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // Prevent the default close; we'll show a dialog via the frontend.
+                api.prevent_close();
+                // Tell the frontend to show the save dialog.
+                let _ = window.emit("save-dialog", ());
+            }
+        })
+        .invoke_handler(tauri::generate_handler![read_image_info, close_app])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
