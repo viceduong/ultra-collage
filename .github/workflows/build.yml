@@ -66,9 +66,6 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev
 
-      - name: Install cargo-tauri
-        run: cargo install tauri-cli --version "^2"
-
       - name: Build
         run: npm run tauri build -- --target ${{ matrix.target }} --bundles ${{ matrix.bundle }}
         env:

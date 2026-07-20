@@ -29,6 +29,8 @@ const loadImage = (url: string): Promise<HTMLImageElement> =>
     img.src = url
   })
 
+
+
 function applyFilters(node: Konva.Image, f: FilterState) {
   if (!hasActiveFilters(f)) return
   node.cache()
@@ -215,12 +217,12 @@ export async function exportCollage(doc: CollageDoc, opts: ExportOptions): Promi
   saveAs(blob, `${safeName}.${opts.format === 'jpeg' ? 'jpg' : 'png'}`)
 }
 
-function findCellById(doc: CollageDoc, id: string) {
-  let found: ReturnType<typeof walk> = undefined
-  function walk(n: CollageDoc['layout']['tree']): import('@/types').CellNode | undefined {
+import type { CellNode } from '@/types'
+
+function findCellById(doc: CollageDoc, id: string): CellNode | undefined {
+  function walk(n: CollageDoc['layout']['tree']): CellNode | undefined {
     if (n.kind === 'cell') return n.id === id ? n : undefined
     return walk(n.a) ?? walk(n.b)
   }
-  found = walk(doc.layout.tree)
-  return found
+  return walk(doc.layout.tree)
 }

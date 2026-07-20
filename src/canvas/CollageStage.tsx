@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import Konva from 'konva'
 import { Group, Image as KImage, Layer as KLayer, Rect as KRect, Stage } from 'react-konva'
 import { computeJustified } from '@/layout/justified'
@@ -19,7 +20,7 @@ import type { CellId, ImageAsset } from '@/types'
 export function CollageStage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
-  const [size, setSize] = useState({ width: 800, height: 600 })
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null)
 
   const doc = useEditor((s) => s.doc)
   const select = useEditor((s) => s.select)
@@ -40,12 +41,6 @@ export function CollageStage() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-
-  // Compute centering offsets — always fit with padding.
-  const pad = 48
-  const zoom = Math.min((size.width - pad) / cw, (size.height - pad) / ch, 2)
-  const offsetX = (size.width - cw * zoom) / 2
-  const offsetY = (size.height - ch * zoom) / 2
 
   // Clicking empty stage clears selection.
   const onStageMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -68,19 +63,6 @@ export function CollageStage() {
     return null
   }
 
-  const cellAtPointer = useCallback(
-    (clientX: number, clientY: number): CellId | null => {
-      const stage = stageRef.current
-      if (!stage) return null
-      const box = stage.container().getBoundingClientRect()
-      const x = (clientX - box.left - offsetX) / zoom
-      const y = (clientY - box.top - offsetY) / zoom
-      return cellAtCollagePoint(x, y)
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layout, offsetX, offsetY, zoom],
-  )
-
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     if (doc.layout.mode === 'grid') setDropCell(cellAtPointer(e.clientX, e.clientY))
@@ -100,7 +82,39 @@ export function CollageStage() {
     }
   }
 
+  // Derive centering from size (null-safe: won't be used when size is null).
+  const pad = 48
+  const derived = useMemo(() => {
+    if (!size) return { zoom: 1, offsetX: 0, offsetY: 0 }
+    const z = Math.min((size.width - pad) / cw, (size.height - pad) / ch, 2)
+    return {
+      zoom: z,
+      offsetX: (size.width - cw * z) / 2,
+      offsetY: (size.height - ch * z) / 2,
+    }
+  }, [size, cw, ch])
+
   const interactive = true
+
+  const cellAtPointer = useCallback(
+    (clientX: number, clientY: number): CellId | null => {
+      const stage = stageRef.current
+      if (!stage) return null
+      const box = stage.container().getBoundingClientRect()
+      const x = (clientX - box.left - derived.offsetX) / derived.zoom
+      const y = (clientY - box.top - derived.offsetY) / derived.zoom
+      return cellAtCollagePoint(x, y)
+    },
+    [layout, derived],
+  )
+
+  if (!size) {
+    return (
+      <div ref={containerRef} className="relative h-full w-full bg-[#0c0d12]" />
+    )
+  }
+
+  const { zoom, offsetX, offsetY } = derived
 
   return (
     <div
@@ -168,7 +182,7 @@ function GridContent({
   interactive: boolean
 }) {
   const doc = useEditor((s) => s.doc)
-  const selection = useEditor((s) => s.selection)
+  const selection = useEditor(useShallow((s) => s.selection))
   const select = useEditor((s) => s.select)
   const swap = useEditor((s) => s.swap)
 

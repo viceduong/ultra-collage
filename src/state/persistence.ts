@@ -1,4 +1,6 @@
 import { get, set, del, createStore } from 'idb-keyval'
+import { join, documentDir } from '@tauri-apps/api/path'
+import { mkdir, exists as fsExists } from '@tauri-apps/plugin-fs'
 import type { AssetId, CollageDoc, ImageAsset } from '@/types'
 import {
   isTauri,
@@ -40,10 +42,8 @@ const CURRENT_DOC_KEY = 'current'
  */
 
 async function ensureProjectDir(): Promise<string> {
-  const { join } = await import('@tauri-apps/api/path')
-  const { mkdir, exists } = await import('@tauri-apps/plugin-fs')
-  const docsDir = await join(await (await import('@tauri-apps/api/path')).documentDir(), 'UltraCollage')
-  if (!(await exists(docsDir))) {
+  const docsDir = await join(await documentDir(), 'UltraCollage')
+  if (!(await fsExists(docsDir))) {
     await mkdir(docsDir)
   }
   return docsDir
@@ -102,8 +102,8 @@ export async function saveDoc(doc: CollageDoc): Promise<void> {
   if (isTauri()) {
     // Save to project file
     const docsDir = await ensureProjectDir()
-    const path = await (await import('@tauri-apps/api/path')).join(docsDir, 'autosave.collage.json')
-    await writeTextFile(path, JSON.stringify(stored, null, 2))
+    const savePath = await join(docsDir, 'autosave.collage.json')
+    await writeTextFile(savePath, JSON.stringify(stored, null, 2))
     return
   }
 
@@ -115,8 +115,8 @@ export async function loadDoc(): Promise<CollageDoc | null> {
   if (isTauri()) {
     try {
       const docsDir = await ensureProjectDir()
-      const path = await (await import('@tauri-apps/api/path')).join(docsDir, 'autosave.collage.json')
-      const text = await readTextFile(path)
+      const loadPath = await join(docsDir, 'autosave.collage.json')
+      const text = await readTextFile(loadPath)
       const stored = JSON.parse(text) as StoredDoc
       return rehydrate(stored)
     } catch {
@@ -130,21 +130,22 @@ export async function loadDoc(): Promise<CollageDoc | null> {
 }
 
 async function rehydrate(stored: StoredDoc): Promise<CollageDoc> {
-  const assets: Record<AssetId, ImageAsset> = {}
-  for (const [id, a] of Object.entries(stored.assets)) {
-    if (isTauri() && 'filePath' in a && a.filePath) {
-      // In Tauri, create object URL from the file path via convertFileSrc
-      const { convertFileSrc } = await import('@tauri-apps/api/core')
-      const tauriAsset = a as unknown as TauriAsset
-      assets[id] = {
-        ...a,
-        url: convertFileSrc(tauriAsset.filePath),
+  const entries = Object.entries(stored.assets)
+  const results: [string, ImageAsset][] = await Promise.all(
+    entries.map(async ([id, a]) => {
+      if (isTauri() && 'filePath' in a && a.filePath) {
+        const { convertFileSrc } = await import('@tauri-apps/api/core')
+        const tauriAsset = a as unknown as TauriAsset
+        return [
+          id,
+          { ...a, url: convertFileSrc(tauriAsset.filePath) } as ImageAsset,
+        ]
       }
-    } else {
       const blob = await getBlob(id)
-      assets[id] = { ...a, url: blob ? URL.createObjectURL(blob) : '' }
-    }
-  }
+      return [id, { ...a, url: blob ? URL.createObjectURL(blob) : '' } as ImageAsset]
+    }),
+  )
+  const assets = Object.fromEntries(results)
   return { ...stored, assets }
 }
 
@@ -167,7 +168,17 @@ const blobToDataURL = (blob: Blob): Promise<string> =>
 
 const dataURLToBlob = async (dataUrl: string): Promise<Blob> => (await fetch(dataUrl)).blob()
 
+const EXPORT_SIZE_WARN_MB = 50
+
 export async function exportProject(doc: CollageDoc): Promise<Blob> {
+  const totalBytes = Object.values(doc.assets).reduce((s, a) => s + (a.size ?? 0), 0)
+  if (totalBytes > EXPORT_SIZE_WARN_MB * 1024 * 1024) {
+    const mb = (totalBytes / 1024 / 1024).toFixed(0)
+    if (!confirm(`Project has ${mb}MB of images. Export may be slow or fail. Continue?`)) {
+      throw new Error('Export cancelled')
+    }
+  }
+
   const blobs: Record<AssetId, string> = {}
   for (const id of Object.keys(doc.assets)) {
     const blob = await getBlob(id)
@@ -190,9 +201,25 @@ export async function exportProject(doc: CollageDoc): Promise<Blob> {
   return new Blob([JSON.stringify(project)], { type: 'application/json' })
 }
 
+function isValidProjectFile(obj: unknown): obj is ProjectFile {
+  if (typeof obj !== 'object' || obj === null) return false
+  const f = obj as Record<string, unknown>
+  return (
+    f.format === 'ultra-collage' &&
+    typeof f.version === 'number' &&
+    typeof f.doc === 'object' && f.doc !== null &&
+    typeof f.blobs === 'object' && f.blobs !== null
+  )
+}
+
 export async function importProject(file: File): Promise<CollageDoc> {
-  const project = JSON.parse(await file.text()) as ProjectFile
-  if (project.format !== 'ultra-collage') throw new Error('Not an Ultra Collage project file')
+  let project: unknown
+  try {
+    project = JSON.parse(await file.text())
+  } catch {
+    throw new Error('Invalid JSON in project file')
+  }
+  if (!isValidProjectFile(project)) throw new Error('Not a valid Ultra Collage project file')
   // Restore blobs into IndexedDB and re-create object URLs.
   for (const [id, dataUrl] of Object.entries(project.blobs)) {
     const blob = await dataURLToBlob(dataUrl)

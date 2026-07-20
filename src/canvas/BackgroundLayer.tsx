@@ -1,3 +1,4 @@
+import Konva from 'konva'
 import { Image as KImage, Rect as KRect } from 'react-konva'
 import type { Background } from '@/types'
 import { useEditor } from '@/state/store'
@@ -52,8 +53,8 @@ function ImageBackground({ assetId, blur, scale, width, height }: { assetId: str
       y={(height - dh) / 2}
       width={dw}
       height={dh}
-      blurRadius={blur}
-      filters={blur > 0 ? undefined : undefined}
+      blurRadius={blur > 0 ? blur : undefined}
+      filters={blur > 0 ? [Konva.Filters.Blur] : undefined}
       listening={false}
     />
   )

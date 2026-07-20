@@ -44,12 +44,6 @@ export type Selection =
   | { kind: 'cell'; id: CellId }
   | { kind: 'layer'; id: LayerId }
 
-export interface ViewState {
-  zoom: number
-  panX: number
-  panY: number
-}
-
 export type RightTab = 'templates' | 'photos' | 'background' | 'text' | 'elements' | 'filters' | 'inspect'
 
 export interface EditorState {
@@ -58,7 +52,6 @@ export interface EditorState {
 
   // ── ephemeral (excluded from history) ───────────────────────────────────
   selection: Selection
-  view: ViewState
   rightTab: RightTab
   hydrated: boolean
 
@@ -98,7 +91,6 @@ export interface EditorState {
 
   // ── ephemeral actions ─────────────────────────────────────────────────────
   select: (sel: Selection) => void
-  setView: (patch: Partial<ViewState>) => void
   setRightTab: (tab: RightTab) => void
   setHydrated: (v: boolean) => void
 }
@@ -110,7 +102,6 @@ export const useEditor = create<EditorState>()(
     immer((set) => ({
       doc: createDocument(),
       selection: { kind: 'none' },
-      view: { zoom: 1, panX: 0, panY: 0 },
       rightTab: 'templates',
       hydrated: false,
 
@@ -341,7 +332,6 @@ export const useEditor = create<EditorState>()(
         }),
 
       select: (selection) => set((s) => void (s.selection = selection)),
-      setView: (patch) => set((s) => void Object.assign(s.view, patch)),
       setRightTab: (rightTab) => set((s) => void (s.rightTab = rightTab)),
       setHydrated: (v) => set((s) => void (s.hydrated = v)),
     })),

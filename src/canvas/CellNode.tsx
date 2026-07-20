@@ -95,8 +95,9 @@ export function CellNode({ layout, style, selected, interactive, onSelect, cells
 
   // (Re)cache when filters or the image change so Konva filters render.
   useEffect(() => {
+    if (!image) return
     const node = imgRef.current
-    if (!node || !image) return
+    if (!node) return
     if (hasActiveFilters(filters)) {
       node.cache()
       node.filters(konvaFilters(filters))
