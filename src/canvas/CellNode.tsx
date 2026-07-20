@@ -90,10 +90,10 @@ export function CellNode({ layout, style, selected, interactive, onSelect, cells
 
   // Filters apply only to the selected cell; when nothing is selected they apply globally.
   const cellSelection = useEditor((s) => s.selection)
-  const applyFilters = cellSelection.kind !== 'cell' || cellSelection.id === cell?.id
-  // Use per-cell filters if set, otherwise global.
-  const globalFilters = style.cellFilters
-  const effectiveFilters = cell?.filters ?? globalFilters
+  const applyFilters = cellSelection.kind !== 'cell' || cellSelection.id === cell!.id
+  const tree = useEditor((s) => s.doc.layout.tree)
+  const cellNode = useMemo(() => findCell(tree, cell!.id), [tree, cell!.id])
+  const effectiveFilters = cellNode?.filters ?? DEFAULT_FILTERS
   const filters = applyFilters ? effectiveFilters : { ...DEFAULT_FILTERS }
   const placement = useMemo(() => {
     if (!cell || !asset) return null
