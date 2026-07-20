@@ -8,7 +8,7 @@ import { useImageElement } from '@/features/images/useImageElement'
 import { hasActiveFilters, konvaFilterAttrs, konvaFilters } from '@/features/filters/filters'
 import { fitCellImage } from './cellImage'
 import { clamp } from '@/lib/utils'
-import type { CellId, CollageStyle, FilterState } from '@/types'
+import type { CellId, CellShape, CollageStyle, FilterState } from '@/types'
 
 interface CellNodeProps {
   layout: CellLayout
@@ -116,8 +116,11 @@ export function CellNode({ layout, style, selected, interactive, onSelect, cells
   const locked = cell.transform.locked ?? false
 
   const clipFn = (ctx: Konva.Context) => {
-    roundedRectPath(ctx, 0, 0, rect.width, rect.height, clamp(style.cornerRadius, 0, Math.min(rect.width, rect.height) / 2))
+    cellShapeClipFunc(ctx, 0, 0, rect.width, rect.height, style.cornerRadius, style.shape)
   }
+
+  const maxR = Math.min(rect.width, rect.height) / 2
+  const rClamped = clamp(style.cornerRadius, 0, maxR)
 
   return (
     <>
@@ -199,16 +202,9 @@ export function CellNode({ layout, style, selected, interactive, onSelect, cells
         />
       )}
 
-      {/* Selection outline. */}
+      {/* Selection outline */}
       {selected && interactive && (
-        <KRect
-          width={rect.width}
-          height={rect.height}
-          cornerRadius={style.cornerRadius}
-          stroke="#6366f1"
-          strokeWidth={3}
-          listening={false}
-        />
+        <SelectionOutline width={rect.width} height={rect.height} r={rClamped} shape={style.shape} />
       )}
 
     </Group>
@@ -315,7 +311,39 @@ function RotateHandle({
 /** Identity for the filter type so other modules can share it. */
 export type CellFilterState = FilterState
 
+// ── Shape clip functions ───────────────────────────────────────────────────
+
+function cellShapeClipFunc(
+  ctx: Konva.Context,
+  x: number, y: number, w: number, h: number,
+  r: number, shape: CellShape,
+) {
+  switch (shape) {
+    case 'circle':  return circlePath(ctx, x, y, w, h)
+    case 'diamond': return diamondPath(ctx, x, y, w, h)
+    case 'hexagon': return hexagonPath(ctx, x, y, w, h, 6)
+    case 'octagon': return octagonPath(ctx, x, y, w, h, 8)
+    case 'heart':   return heartPath(ctx, x, y, w, h)
+    case 'drop':    return dropPath(ctx, x, y, w, h)
+    case 'pill':    return pillPath(ctx, x, y, w, h, r)
+    default:
+      roundedRectPath(ctx, x, y, w, h, r)
+  }
+}
+
+function centerOriginPath(
+  ctx: Konva.Context,
+  x: number, y: number, w: number, h: number,
+  draw: (cx: number, cy: number, rw: number, rh: number) => void,
+) {
+  ctx.beginPath()
+  draw(x + w / 2, y + h / 2, w / 2, h / 2)
+  ctx.closePath()
+}
+
+/** Rounded rectangle (default). */
 function roundedRectPath(ctx: Konva.Context, x: number, y: number, w: number, h: number, r: number) {
+  r = Math.min(r, Math.min(w, h) / 2)
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.arcTo(x + w, y, x + w, y + h, r)
@@ -323,4 +351,169 @@ function roundedRectPath(ctx: Konva.Context, x: number, y: number, w: number, h:
   ctx.arcTo(x, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
+}
+
+/** Ellipse inscribed in the rect. */
+function circlePath(ctx: Konva.Context, x: number, y: number, w: number, h: number) {
+  centerOriginPath(ctx, x, y, w, h, (cx, cy, rw, rh) => {
+    ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2)
+  })
+}
+
+/** 45° rotated square — spans corner to corner. */
+function diamondPath(ctx: Konva.Context, x: number, y: number, w: number, h: number) {
+  const cx = x + w / 2
+  const cy = y + h / 2
+  ctx.beginPath()
+  ctx.moveTo(cx, y)
+  ctx.lineTo(x + w, cy)
+  ctx.lineTo(cx, y + h)
+  ctx.lineTo(x, cy)
+  ctx.closePath()
+}
+
+/** Regular polygon inscribed in the rect. */
+function regularPolyPath(
+  ctx: Konva.Context, x: number, y: number, w: number, h: number, sides: number,
+) {
+  const cx = x + w / 2
+  const cy = y + h / 2
+  const rx = w / 2
+  const ry = h / 2
+  ctx.beginPath()
+  for (let i = 0; i < sides; i++) {
+    const a = (Math.PI * 2 * i) / sides - Math.PI / 2
+    const px = cx + rx * Math.cos(a)
+    const py = cy + ry * Math.sin(a)
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+}
+
+function hexagonPath(ctx: Konva.Context, x: number, y: number, w: number, h: number, sides: number) {
+  regularPolyPath(ctx, x, y, w, h, sides)
+}
+
+function octagonPath(ctx: Konva.Context, x: number, y: number, w: number, h: number, sides: number) {
+  regularPolyPath(ctx, x, y, w, h, sides)
+}
+
+/** Heart using cubic beziers — sits centered in the rect. */
+function heartPath(ctx: Konva.Context, x: number, y: number, w: number, h: number) {
+  const cx = x + w / 2
+  const cy = y + h / 2
+  const s = Math.min(w, h) * 0.48
+  ctx.beginPath()
+  ctx.moveTo(cx, cy + s * 0.7)
+  ctx.bezierCurveTo(cx + s * 0.2, cy + s * 0.3, cx + s * 1.1, cy - s * 0.3, cx, cy - s * 0.5)
+  ctx.bezierCurveTo(cx - s * 1.1, cy - s * 0.3, cx - s * 0.2, cy + s * 0.3, cx, cy + s * 0.7)
+  ctx.closePath()
+}
+
+/** Teardrop / droplet shape. */
+function dropPath(ctx: Konva.Context, x: number, y: number, w: number, h: number) {
+  const cx = x + w / 2
+  const cy = y + h / 2
+  const rx = w / 2
+  const ry = h / 2
+  const tipY = y
+  ctx.beginPath()
+  ctx.moveTo(cx, tipY)
+  ctx.bezierCurveTo(cx + rx * 0.2, cy - ry * 0.3, cx + rx, cy - ry * 0.1, cx + rx, cy + ry * 0.2)
+  ctx.ellipse(cx, cy + ry * 0.2, rx, ry * 0.75, 0, 0, Math.PI)
+  ctx.bezierCurveTo(cx - rx, cy - ry * 0.1, cx - rx * 0.2, cy - ry * 0.3, cx, tipY)
+  ctx.closePath()
+}
+
+/** Pill / stadium — two semicircles, straight sides. */
+function pillPath(ctx: Konva.Context, x: number, y: number, w: number, h: number, r: number) {
+  const maxR = Math.min(w, h) / 2
+  const radius = Math.min(r || maxR, maxR)
+  ctx.beginPath()
+  // Start at top-left, with the fillet
+  ctx.moveTo(x + radius, y)
+  // Top edge
+  ctx.lineTo(x + w - radius, y)
+  // Right semicircle
+  ctx.arcTo(x + w, y, x + w, y + h, radius)
+  ctx.arcTo(x + w, y + h, x, y + h, radius)
+  // Left semicircle
+  ctx.arcTo(x, y + h, x, y, radius)
+  ctx.arcTo(x, y, x + w, y, radius)
+  ctx.closePath()
+}
+
+// ── Selection outline (shape-aware) ───────────────────────────────────────
+
+/** Renders the selection border matching the cell's clip shape. */
+function SelectionOutline({ width, height, r, shape }: {
+  width: number; height: number; r: number; shape: CellShape
+}) {
+  // For circle and diamond, we can use the same path as the clip.
+  // For regular polygons we draw a matching Path node.
+  // For the others we approximate with a Path.
+  if (shape === 'rounded') {
+    return (
+      <KRect
+        width={width}
+        height={height}
+        cornerRadius={r}
+        stroke="#6366f1"
+        strokeWidth={3}
+        listening={false}
+      />
+    )
+  }
+
+  // For all other shapes, render a matching SVG path data string.
+  return (
+    <Path
+      data={selectionOutlinePath(width, height, shape, r)}
+      x={0}
+      y={0}
+      stroke="#6366f1"
+      strokeWidth={3}
+      listening={false}
+    />
+  )
+}
+
+/** SVG path data for the selection outline of a non-rounded shape. */
+function selectionOutlinePath(w: number, h: number, shape: CellShape, r = 0): string {
+  switch (shape) {
+    case 'circle': {
+      const rx = w / 2, ry = h / 2
+      return `M${w - rx} ${h / 2} A${rx} ${ry} 0 1 1 ${rx} ${h / 2} A${rx} ${ry} 0 1 1 ${w - rx} ${h / 2}`
+    }
+    case 'diamond':
+      return `M${w / 2} 0 L${w} ${h / 2} L${w / 2} ${h} L0 ${h / 2} Z`
+    case 'hexagon':
+    case 'octagon': {
+      const s = shape === 'hexagon' ? 6 : 8
+      const cx = w / 2, cy = h / 2, rx = w / 2, ry = h / 2
+      const pts: string[] = []
+      for (let i = 0; i < s; i++) {
+        const a = (Math.PI * 2 * i) / s - Math.PI / 2
+        pts.push(`${cx + rx * Math.cos(a)} ${cy + ry * Math.sin(a)}`)
+      }
+      return `M${pts.join(' L')} Z`
+    }
+    case 'heart': {
+      const s = Math.min(w, h) * 0.48
+      return `M${w / 2} ${h / 2 + s * 0.7} C${w / 2 + s * 0.2} ${h / 2 + s * 0.3} ${w / 2 + s * 1.1} ${h / 2 - s * 0.3} ${w / 2} ${h / 2 - s * 0.5} C${w / 2 - s * 1.1} ${h / 2 - s * 0.3} ${w / 2 - s * 0.2} ${h / 2 + s * 0.3} ${w / 2} ${h / 2 + s * 0.7} Z`
+    }
+    case 'drop': {
+      const rx = w / 2, ry = h / 2
+      const tip = 0
+      return `M${w / 2} ${tip} C${w / 2 + rx * 0.2} ${ry * 0.7} ${w / 2 + rx} ${ry * 0.9} ${w / 2 + rx} ${ry * 1.2} A${rx} ${ry * 0.75} 0 1 1 ${w / 2 - rx} ${ry * 1.2} C${w / 2 - rx} ${ry * 0.9} ${w / 2 - rx * 0.2} ${ry * 0.7} ${w / 2} ${tip} Z`
+    }
+    case 'pill': {
+      const maxR = Math.min(w, h) / 2
+      const radius = Math.min(r || maxR, maxR)
+      const d = w - radius * 2
+      return `M${radius} 0 L${radius + d} 0 A${radius} ${radius} 0 0 1 ${w} ${radius} A${radius} ${radius} 0 0 1 ${radius + d} ${h} L${radius} ${h} A${radius} ${radius} 0 0 1 0 ${radius} A${radius} ${radius} 0 0 1 ${radius} 0 Z`
+    }
+    default:
+      return `M0 0 L${w} 0 L${w} ${h} L0 ${h} Z`
+  }
 }

@@ -6,6 +6,7 @@ export const DEFAULT_STYLE: CollageStyle = {
   spacing: 12,
   outerPadding: 12,
   cornerRadius: 8,
+  shape: 'rounded',
   cellFilters: { ...DEFAULT_FILTERS },
 }
 

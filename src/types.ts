@@ -140,12 +140,17 @@ export type Background =
   | { type: 'image'; assetId: AssetId; blur: number; scale: number }
   | { type: 'transparent' }
 
+// ── Cell shape ───────────────────────────────────────────────────────────────
+
+export type CellShape = 'rounded' | 'circle' | 'diamond' | 'hexagon' | 'octagon' | 'heart' | 'drop' | 'pill'
+
 // ── Style ────────────────────────────────────────────────────────────────────
 
 export interface CollageStyle {
   spacing: number // gap between cells (px in doc space)
   outerPadding: number // padding around the whole grid
   cornerRadius: number // rounded cell corners
+  shape: CellShape // clip shape for grid cells
   cellFilters: FilterState // filters applied uniformly to all grid cells
 }
 

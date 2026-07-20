@@ -29,6 +29,8 @@ export const TEMPLATES: Template[] = [
   { id: 'g-4', name: '4 · Grid', cells: 4, category: 'grid', build: () => gridTree(2, 2) },
   { id: 'g-6', name: '6 · Grid', cells: 6, category: 'grid', build: () => gridTree(2, 3) },
   { id: 'g-9', name: '9 · Grid', cells: 9, category: 'grid', build: () => gridTree(3, 3) },
+  { id: 'g-2x4', name: '2×4 Grid', cells: 8, category: 'grid', build: () => gridTree(2, 4) },
+  { id: 'g-3x5', name: '3×5 Grid', cells: 15, category: 'grid', build: () => gridTree(3, 5) },
 
   // ── Feature layouts (one hero + supporting) ─────────────────────────────
   {
@@ -39,11 +41,25 @@ export const TEMPLATES: Template[] = [
     build: () => h(c(), v(c(), c()), 0.62),
   },
   {
+    id: 'f-right',
+    name: 'Hero right',
+    cells: 3,
+    category: 'feature',
+    build: () => h(v(c(), c()), c(), 0.38),
+  },
+  {
     id: 'f-top',
     name: 'Hero top',
     cells: 3,
     category: 'feature',
     build: () => v(c(), h(c(), c()), 0.62),
+  },
+  {
+    id: 'f-bottom',
+    name: 'Hero bottom',
+    cells: 3,
+    category: 'feature',
+    build: () => v(h(c(), c()), c(), 0.38),
   },
   {
     id: 'f-center',
@@ -69,6 +85,18 @@ export const TEMPLATES: Template[] = [
     build: () => v(h(c(), h(c(), c(), 0.5), 0.4), h(c(), c(), 0.6), 0.55),
   },
   {
+    id: 'm-5b',
+    name: 'Mosaic 5B',
+    cells: 5,
+    category: 'mosaic',
+    build: () =>
+      h(
+        v(c(), c(), 0.6),
+        v(c(), h(c(), c(), 0.5), 0.4),
+        0.5,
+      ),
+  },
+  {
     id: 'm-7',
     name: 'Mosaic 7',
     cells: 7,
@@ -89,6 +117,61 @@ export const TEMPLATES: Template[] = [
       v(
         h(c(), c(), 0.66),
         h(v(c(), c(), 0.5), c(), 0.34),
+        0.5,
+      ),
+  },
+  {
+    id: 'm-lshape',
+    name: 'L-shape',
+    cells: 4,
+    category: 'mosaic',
+    build: () =>
+      v(
+        h(c(), c()),
+        c(),
+        0.50,
+      ),
+  },
+  {
+    id: 'm-zagzig',
+    name: 'Zigzag',
+    cells: 4,
+    category: 'mosaic',
+    build: () =>
+      h(
+        v(c(), c(), 0.65),
+        v(c(), c(), 0.35),
+        0.5,
+      ),
+  },
+  {
+    id: 'm-stagger',
+    name: 'Staggered 3',
+    cells: 3,
+    category: 'mosaic',
+    build: () => h(v(c(), c(), 0.7), c(), 0.55),
+  },
+  {
+    id: 'm-railroad',
+    name: 'Railroad',
+    cells: 6,
+    category: 'mosaic',
+    build: () =>
+      v(
+        v(c(), c(), 0.33),
+        h(v(c(), c()), v(c(), c()), 0.5),
+        0.5,
+      ),
+  },
+  {
+    id: 'm-triple',
+    name: 'Triple stack',
+    cells: 3,
+    category: 'mosaic',
+    build: () =>
+      v(
+        c(),
+        h(c(), c()),
         0.5,
       ),
   },
