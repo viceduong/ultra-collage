@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TopBar } from './app/TopBar'
 import { LeftPanel } from './app/LeftPanel'
 import { RightPanel } from './app/RightPanel'
@@ -9,14 +9,28 @@ import { useEditor } from './state/store'
 import { isTauri } from './lib/tauri'
 import { ingestFilePaths } from './features/images/useImages'
 
+// ── Save-confirm modal (3-button: Save / Don't Save / Cancel) ────────────
+
+type SaveChoice = 'save' | 'discard' | 'cancel'
+
+let pendingSaveChoice: ((c: SaveChoice) => void) | null = null
+
+export function triggerSaveConfirm(): Promise<SaveChoice> {
+  return new Promise((resolve) => {
+    pendingSaveChoice = resolve
+  })
+}
+
 export default function App() {
   useAutosave()
   useKeyboard()
   const hydrated = useEditor((s) => s.hydrated)
   const autoFill = useEditor((s) => s.autoFillFromAssets)
+  const [showSaveModal, setShowSaveModal] = useState(false)
 
-  // Tauri: handle file drops + close-with-save
+  // Tauri: handle file drops + close confirmation
   const listenRef = useRef(false)
+  const closingRef = useRef(false)
   useEffect(() => {
     if (!isTauri() || listenRef.current) return
     listenRef.current = true
@@ -36,25 +50,23 @@ export default function App() {
     import('@tauri-apps/api/window')
       .then(async ({ getCurrentWindow }) => {
         const unsub = await getCurrentWindow().onCloseRequested(async (event) => {
-          // Check if there's an autosave (document has unsaved changes)
-          const { ask } = await import('@tauri-apps/plugin-dialog')
-          const save = await ask('Save your collage before closing?', {
-            title: 'Ultra Collage',
-            kind: 'warning',
-            cancelLabel: 'Cancel',
-            okLabel: 'Save & close',
-          })
-          if (save) {
-            // Trigger autosave then allow close
+          if (closingRef.current) return
+          event.preventDefault()
+
+          setShowSaveModal(true)
+          const choice = await triggerSaveConfirm()
+          setShowSaveModal(false)
+
+          if (choice === 'cancel') return
+
+          if (choice === 'save') {
             const { saveDoc } = await import('@/state/persistence')
             const doc = useEditor.getState().doc
             await saveDoc(doc)
-            event.preventDefault()
-            // Close after save completes
-            await getCurrentWindow().close()
-          } else {
-            // Don't save, just close
           }
+
+          closingRef.current = true
+          await getCurrentWindow().close()
         })
         unlisteners.push(unsub)
       })
@@ -80,6 +92,51 @@ export default function App() {
           )}
         </main>
         <RightPanel />
+      </div>
+
+      {showSaveModal && (
+        <SaveConfirmModal />
+      )}
+    </div>
+  )
+}
+
+function SaveConfirmModal() {
+  const [busy, setBusy] = useState(false)
+
+  const handle = (choice: SaveChoice) => {
+    if (busy) return
+    setBusy(true)
+    pendingSaveChoice?.(choice)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] grid place-items-center bg-black/60 animate-fade-in">
+      <div className="w-[380px] animate-slide-up rounded-xl border border-border bg-surface p-5 shadow-2xl">
+        <h2 className="mb-1 text-base font-semibold">Save changes?</h2>
+        <p className="mb-5 text-sm text-muted-foreground">
+          Your collage has unsaved changes.
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => handle('save')}
+            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => handle('discard')}
+            className="w-full rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            Don't save
+          </button>
+          <button
+            onClick={() => handle('cancel')}
+            className="w-full rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   )
