@@ -13,7 +13,6 @@ const TABS: { id: RightTab; label: string; icon: typeof Grid2x2 }[] = [
   { id: 'templates', label: 'Layout', icon: LayoutGrid },
   { id: 'background', label: 'Backdrop', icon: Palette },
   { id: 'text', label: 'Text', icon: Type },
-  { id: 'elements', label: 'Elements', icon: Shapes },
   { id: 'filters', label: 'Filters', icon: SlidersHorizontal },
   { id: 'inspect', label: 'Edit', icon: ImageIcon },
 ]
@@ -53,7 +52,6 @@ export function RightPanel() {
         )}
         {tab === 'background' && <BackgroundPanel />}
         {tab === 'text' && <ElementsPanel />}
-        {tab === 'elements' && <ElementsPanel />}
         {tab === 'filters' && <FiltersPanel />}
         {tab === 'inspect' && <InspectorPanel />}
       </div>

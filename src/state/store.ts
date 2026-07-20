@@ -44,7 +44,7 @@ export type Selection =
   | { kind: 'cell'; id: CellId }
   | { kind: 'layer'; id: LayerId }
 
-export type RightTab = 'templates' | 'photos' | 'background' | 'text' | 'elements' | 'filters' | 'inspect'
+export type RightTab = 'templates' | 'photos' | 'background' | 'text' | 'filters' | 'inspect'
 
 export interface EditorState {
   // ── persisted/undoable ────────────────────────────────────────────────
