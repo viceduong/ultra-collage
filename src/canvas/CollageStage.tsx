@@ -11,6 +11,8 @@ import { CellNode } from './CellNode'
 import { SplitHandle } from './SplitHandle'
 import { FreeLayer } from './FreeLayer'
 import { BackgroundLayer } from './BackgroundLayer'
+import { findCell as findCellInTree } from '@/layout/tree'
+import { clamp } from '@/lib/utils'
 import type { CellId, ImageAsset } from '@/types'
 
 /**
@@ -26,6 +28,7 @@ export function CollageStage() {
   const select = useEditor((s) => s.select)
   const selection = useEditor((s) => s.selection)
   const assignImageToCell = useEditor((s) => s.assignImageToCell)
+  const updateCellTransform = useEditor((s) => s.updateCellTransform)
   const ingest = useImageIngest()
 
   const { width: cw, height: ch } = doc.canvas
@@ -45,6 +48,25 @@ export function CollageStage() {
   // Clicking empty stage clears selection.
   const onStageMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (e.target === e.target.getStage()) select({ kind: 'none' })
+  }
+
+  // Scroll-to-zoom when a cell with an image is selected.
+  const onWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault()
+    if (selection.kind !== 'cell') return
+    const selId = selection.id
+    const cell = findCellInTree(doc.layout.tree, selId)
+    if (!cell?.assetId || cell.transform.locked) return
+    // Check the pointer is actually over this cell.
+    const stage = stageRef.current
+    if (!stage) return
+    const layerPos = stage.getRelativePointerPosition()
+    if (!layerPos) return
+    const under = cellAtCollagePoint(layerPos.x, layerPos.y)
+    if (under !== selId) return
+    const dir = e.evt.deltaY > 0 ? -1 : 1
+    const nextZoom = clamp(cell.transform.zoom * (1 + dir * 0.08), 1, 6)
+    updateCellTransform(selId, { zoom: nextZoom })
   }
 
   // ── Drag-drop of photos from tray onto a cell ───────────────────────────
@@ -138,6 +160,7 @@ export function CollageStage() {
         scaleX={zoom}
         scaleY={zoom}
         onMouseDown={onStageMouseDown}
+        onWheel={onWheel}
       >
         {/* Background + drop shadow frame */}
         <KLayer listening={false}>
