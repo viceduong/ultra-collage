@@ -30,7 +30,6 @@ export default function App() {
 
   // Tauri: handle file drops + close confirmation
   const listenRef = useRef(false)
-  const closingRef = useRef(false)
   useEffect(() => {
     if (!isTauri() || listenRef.current) return
     listenRef.current = true
@@ -47,17 +46,18 @@ export default function App() {
       })
       .catch(console.error)
 
+    // Close handler: prevent default, show modal, then destroy on confirm.
+    let resolving = false
     import('@tauri-apps/api/window')
       .then(async ({ getCurrentWindow }) => {
         const unsub = await getCurrentWindow().onCloseRequested(async (event) => {
-          if (closingRef.current) return
+          if (resolving) return
           event.preventDefault()
+          resolving = true
 
           setShowSaveModal(true)
           const choice = await triggerSaveConfirm()
           setShowSaveModal(false)
-
-          if (choice === 'cancel') return
 
           if (choice === 'save') {
             const { saveDoc } = await import('@/state/persistence')
@@ -65,8 +65,10 @@ export default function App() {
             await saveDoc(doc)
           }
 
-          closingRef.current = true
-          await getCurrentWindow().close()
+          if (choice !== 'cancel') {
+            // Use destroy() to bypass any leftover close-prevention state.
+            await getCurrentWindow().destroy()
+          }
         })
         unlisteners.push(unsub)
       })

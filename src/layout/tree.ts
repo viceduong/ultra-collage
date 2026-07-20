@@ -163,11 +163,12 @@ function buildEven(leaves: LayoutNode[], dir: SplitDir): LayoutNode {
   return makeSplit(dir, buildEven(left, dir), buildEven(right, dir), left.length / leaves.length)
 }
 
-/** Assign asset ids to the first N empty cells in tree order. */
+/** Assign asset ids to empty cells in tree order (skips already-filled cells). */
 export function fillCells(node: LayoutNode, assetIds: AssetId[]): LayoutNode {
   let i = 0
   const apply = (n: LayoutNode): LayoutNode => {
     if (n.kind === 'cell') {
+      if (n.assetId) return n // skip filled cells
       if (i < assetIds.length) {
         const assetId = assetIds[i++]
         return { ...n, assetId }
