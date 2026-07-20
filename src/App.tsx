@@ -15,25 +15,53 @@ export default function App() {
   const hydrated = useEditor((s) => s.hydrated)
   const autoFill = useEditor((s) => s.autoFillFromAssets)
 
-  // Tauri: handle file drops from OS file manager
+  // Tauri: handle file drops + close-with-save
   const listenRef = useRef(false)
   useEffect(() => {
     if (!isTauri() || listenRef.current) return
     listenRef.current = true
 
-    let unlisten: (() => void) | undefined
+    const unlisteners: (() => void)[] = []
 
     import('@tauri-apps/api/event')
       .then(async ({ listen }) => {
-        unlisten = await listen<string[]>('tauri://file-drop', async (event) => {
+        const unsub = await listen<string[]>('tauri://file-drop', async (event) => {
           const ids = await ingestFilePaths(event.payload)
           if (ids.length) autoFill(ids)
         })
+        unlisteners.push(unsub)
+      })
+      .catch(console.error)
+
+    import('@tauri-apps/api/window')
+      .then(async ({ getCurrentWindow }) => {
+        const unsub = await getCurrentWindow().onCloseRequested(async (event) => {
+          // Check if there's an autosave (document has unsaved changes)
+          const { ask } = await import('@tauri-apps/plugin-dialog')
+          const save = await ask('Save your collage before closing?', {
+            title: 'Ultra Collage',
+            kind: 'warning',
+            cancelLabel: 'Cancel',
+            okLabel: 'Save & close',
+          })
+          if (save) {
+            // Trigger autosave then allow close
+            const { saveDoc } = await import('@/state/persistence')
+            const doc = useEditor.getState().doc
+            await saveDoc(doc)
+            event.preventDefault()
+            // Close after save completes
+            await getCurrentWindow().close()
+          } else {
+            // Don't save, just close
+          }
+        })
+        unlisteners.push(unsub)
       })
       .catch(console.error)
 
     return () => {
-      unlisten?.()
+      unlisteners.forEach((fn) => fn())
     }
   }, [autoFill])
 
