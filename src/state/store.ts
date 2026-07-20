@@ -53,6 +53,7 @@ export interface EditorState {
   // ── ephemeral (excluded from history) ───────────────────────────────────
   selection: Selection
   rightTab: RightTab
+  editingTextId: LayerId | null
   hydrated: boolean
 
   // ── document actions ────────────────────────────────────────────────────
@@ -92,6 +93,8 @@ export interface EditorState {
   // ── ephemeral actions ─────────────────────────────────────────────────────
   select: (sel: Selection) => void
   setRightTab: (tab: RightTab) => void
+  startEditingText: (id: LayerId) => void
+  stopEditingText: () => void
   setHydrated: (v: boolean) => void
 }
 
@@ -103,6 +106,7 @@ export const useEditor = create<EditorState>()(
       doc: createDocument(),
       selection: { kind: 'none' },
       rightTab: 'templates',
+      editingTextId: null,
       hydrated: false,
 
       loadDoc: (doc) =>
@@ -333,6 +337,8 @@ export const useEditor = create<EditorState>()(
 
       select: (selection) => set((s) => void (s.selection = selection)),
       setRightTab: (rightTab) => set((s) => void (s.rightTab = rightTab)),
+      startEditingText: (id) => set((s) => void (s.editingTextId = id)),
+      stopEditingText: () => set((s) => void (s.editingTextId = null)),
       setHydrated: (v) => set((s) => void (s.hydrated = v)),
     })),
     {

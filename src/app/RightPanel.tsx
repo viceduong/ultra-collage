@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Grid2x2, Image as ImageIcon, LayoutGrid, Palette, Shapes, SlidersHorizontal, Type } from 'lucide-react'
 import { useEditor, type RightTab } from '@/state/store'
 import { cn } from '@/lib/utils'
@@ -22,12 +21,8 @@ const TABS: { id: RightTab; label: string; icon: typeof Grid2x2 }[] = [
 export function RightPanel() {
   const tab = useEditor((s) => s.rightTab)
   const setTab = useEditor((s) => s.setRightTab)
-  const selection = useEditor((s) => s.selection)
 
-  // Auto-switch to the inspector when something is selected.
-  useEffect(() => {
-    if (selection.kind !== 'none') setTab('inspect')
-  }, [selection, setTab])
+
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-l border-border bg-surface">

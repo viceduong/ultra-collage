@@ -13,7 +13,7 @@ import { FreeLayer } from './FreeLayer'
 import { BackgroundLayer } from './BackgroundLayer'
 import { findCell as findCellInTree } from '@/layout/tree'
 import { clamp } from '@/lib/utils'
-import type { CellId, ImageAsset } from '@/types'
+import type { CellId, ImageAsset, TextLayer } from '@/types'
 
 /**
  * The interactive editor canvas. Always centered, no pan/zoom/scroll.
@@ -118,6 +118,12 @@ export function CollageStage() {
 
   const interactive = true
 
+  const editingTextId = useEditor((s) => s.editingTextId)
+  const editingLayer = useMemo(
+    () => (editingTextId ? (doc.freeLayers.find((l) => l.id === editingTextId && l.type === 'text') as TextLayer | undefined) : undefined),
+    [editingTextId, doc.freeLayers],
+  )
+
   const cellAtPointer = useCallback(
     (clientX: number, clientY: number): CellId | null => {
       const stage = stageRef.current
@@ -139,6 +145,7 @@ export function CollageStage() {
   const { zoom, offsetX, offsetY } = derived
 
   return (
+    <>
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-[#0c0d12]"
@@ -192,6 +199,107 @@ export function CollageStage() {
         </KLayer>
       </Stage>
     </div>
+      <TextEditor
+        textLayer={editingLayer}
+        containerRef={containerRef}
+        stageX={offsetX}
+        stageY={offsetY}
+        stageZoom={zoom}
+      />
+    </>
+  )
+}
+
+// ── Inline text editor overlay ────────────────────────────────────────────
+
+function TextEditor({
+  textLayer,
+  containerRef,
+  stageX,
+  stageY,
+  stageZoom,
+}: {
+  textLayer: TextLayer | undefined
+  containerRef: React.RefObject<HTMLDivElement | null>
+  stageX: number
+  stageY: number
+  stageZoom: number
+}) {
+  const updateLayer = useEditor((s) => s.updateLayer)
+  const stopEditingText = useEditor((s) => s.stopEditingText)
+  const textRef = useRef<HTMLTextAreaElement>(null)
+  const [value, setValue] = useState(textLayer?.text ?? '')
+
+  useEffect(() => {
+    setValue(textLayer?.text ?? '')
+    const ta = textRef.current
+    if (ta) {
+      ta.focus()
+      ta.select()
+    }
+  }, [textLayer])
+
+  const commit = useCallback(() => {
+    if (textLayer && value !== textLayer.text) {
+      updateLayer(textLayer.id, { text: value })
+    }
+    stopEditingText()
+  }, [textLayer, value, updateLayer, stopEditingText])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        stopEditingText()
+        return
+      }
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        commit()
+      }
+    },
+    [commit, stopEditingText],
+  )
+
+  if (!textLayer || !containerRef.current) return null
+
+  const box = containerRef.current.getBoundingClientRect()
+  const left = box.left + stageX + textLayer.x * stageZoom
+  const top = box.top + stageY + textLayer.y * stageZoom
+  const width = Math.max(60, textLayer.width * stageZoom)
+  const height = Math.max(28, textLayer.height * stageZoom)
+  const fontSize = Math.max(12, textLayer.fontSize * stageZoom * 0.65)
+
+  return (
+    <textarea
+      ref={textRef}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={handleKeyDown}
+      style={{
+        position: 'fixed',
+        left,
+        top,
+        width,
+        height,
+        fontSize,
+        lineHeight: textLayer.lineHeight,
+        fontFamily: textLayer.fontFamily,
+        fontStyle: textLayer.fontStyle?.includes('italic') ? 'italic' : 'normal',
+        fontWeight: textLayer.fontStyle?.includes('bold') ? 'bold' : 'normal',
+        textAlign: textLayer.align,
+        color: textLayer.fill,
+        border: '2px solid #6366f1',
+        background: 'rgba(255,255,255,0.95)',
+        outline: 'none',
+        resize: 'none',
+        overflow: 'hidden',
+        padding: '4px 6px',
+        borderRadius: 4,
+        zIndex: 100,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+      }}
+    />
   )
 }
 
