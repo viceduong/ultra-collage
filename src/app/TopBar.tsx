@@ -1,9 +1,15 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { Download, FilePlus2, FolderOpen, Redo2, Save, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { useEditor, useTemporal } from '@/state/store'
-import { exportProject, importProject } from '@/state/persistence'
+import {
+  exportProject,
+  importProject,
+  openProjectFromDisk,
+  saveProjectToDisk,
+} from '@/state/persistence'
+import { isTauri } from '@/lib/tauri'
 import { saveAs } from 'file-saver'
 import { ExportDialog } from '@/features/export/ExportDialog'
 
@@ -20,19 +26,29 @@ export function TopBar() {
   const canUndo = useTemporal((s) => s.pastStates.length > 0)
   const canRedo = useTemporal((s) => s.futureStates.length > 0)
 
-  const onSaveProject = async () => {
-    const blob = await exportProject(doc)
-    saveAs(blob, `${(doc.name || 'collage').replace(/[^\w\-]+/g, '_')}.collage.json`)
-  }
+  const onSaveProject = useCallback(async () => {
+    if (isTauri()) {
+      await saveProjectToDisk(doc)
+    } else {
+      const blob = await exportProject(doc)
+      saveAs(blob, `${(doc.name || 'collage').replace(/[^\w\-]+/g, '_')}.collage.json`)
+    }
+  }, [doc])
 
-  const onOpenProject = async (file: File) => {
+  const onOpenProject = useCallback(async (file?: File) => {
+    if (isTauri()) {
+      const loaded = await openProjectFromDisk()
+      if (loaded) loadDoc(loaded)
+      return
+    }
+    if (!file) return
     try {
       const loaded = await importProject(file)
       loadDoc(loaded)
     } catch (err) {
       alert(`Could not open project: ${(err as Error).message}`)
     }
-  }
+  }, [loadDoc])
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3">
@@ -72,7 +88,13 @@ export function TopBar() {
           </Button>
         </Tooltip>
         <Tooltip label="Open project (.collage.json)">
-          <Button variant="ghost" size="icon" onClick={() => fileRef.current?.click()}>
+          <Button variant="ghost" size="icon" onClick={() => {
+            if (isTauri()) {
+              onOpenProject()
+            } else {
+              fileRef.current?.click()
+            }
+          }}>
             <FolderOpen className="h-4 w-4" />
           </Button>
         </Tooltip>

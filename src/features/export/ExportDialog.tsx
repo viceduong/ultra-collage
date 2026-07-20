@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { Slider } from '@/components/ui/Slider'
 import { useEditor } from '@/state/store'
 import { exportCollage } from './exportCollage'
+import { exportImageToDisk } from '@/state/persistence'
+import { isTauri } from '@/lib/tauri'
 
 export function ExportDialog({ onClose }: { onClose: () => void }) {
   const doc = useEditor((s) => s.doc)
@@ -19,7 +21,15 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
   const run = async () => {
     setBusy(true)
     try {
-      await exportCollage(doc, { format, scale, quality, transparent })
+      if (isTauri()) {
+        // Tauri: render to canvas, save via native dialog
+        const { renderToCanvas } = await import('./exportCollage')
+        const canvas = await renderToCanvas(doc, scale, transparent && format === 'png')
+        await exportImageToDisk(canvas, { format, quality, name: doc.name })
+      } else {
+        // Browser: render + download via file-saver
+        await exportCollage(doc, { format, scale, quality, transparent })
+      }
       onClose()
     } catch (err) {
       alert(`Export failed: ${(err as Error).message}`)
@@ -78,7 +88,7 @@ export function ExportDialog({ onClose }: { onClose: () => void }) {
 
         <Button variant="primary" size="lg" className="w-full" onClick={run} disabled={busy}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          {busy ? 'Rendering…' : 'Download'}
+          {busy ? 'Rendering…' : 'Save'}
         </Button>
       </div>
     </div>

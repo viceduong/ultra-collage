@@ -5,17 +5,30 @@ import { useShallow } from 'zustand/react/shallow'
 import { useEditor } from '@/state/store'
 import { useImageIngest } from '@/features/images/useImages'
 import { deleteBlob } from '@/state/persistence'
+import { isTauri } from '@/lib/tauri'
 import { formatBytes } from '@/lib/utils'
 
 /**
  * The photo tray: upload images, then drag a thumbnail onto a cell, or
  * "Auto-fill" to drop them into empty cells in order.
+ *
+ * Tauri mode: uses native file dialog via @tauri-apps/plugin-dialog.
+ * Browser mode: uses standard <input type="file"> for dev.
  */
 export function LeftPanel() {
   const assets = useEditor(useShallow((s) => Object.values(s.doc.assets)))
   const autoFill = useEditor((s) => s.autoFillFromAssets)
   const ingest = useImageIngest()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const onUpload = async () => {
+    if (isTauri()) {
+      const ids = await ingest(undefined)
+      if (ids.length) autoFill(ids)
+    } else {
+      fileRef.current?.click()
+    }
+  }
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-surface">
@@ -25,7 +38,7 @@ export function LeftPanel() {
       </div>
 
       <div className="flex gap-2 px-4 py-3">
-        <Button variant="primary" size="sm" className="flex-1" onClick={() => fileRef.current?.click()}>
+        <Button variant="primary" size="sm" className="flex-1" onClick={onUpload}>
           <ImagePlus className="h-4 w-4" />
           Upload
         </Button>
@@ -40,26 +53,29 @@ export function LeftPanel() {
         </Button>
       </div>
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={async (e) => {
-          if (e.target.files?.length) {
-            const ids = await ingest(e.target.files)
-            autoFill(ids)
-          }
-          e.target.value = ''
-        }}
-      />
+      {/* Browser-only file input */}
+      {!isTauri() && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={async (e) => {
+            if (e.target.files?.length) {
+              const ids = await ingest(e.target.files)
+              autoFill(ids)
+            }
+            e.target.value = ''
+          }}
+        />
+      )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         {assets.length === 0 ? (
           <label
             className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-center text-xs text-muted-foreground hover:border-ring"
-            onClick={() => fileRef.current?.click()}
+            onClick={onUpload}
           >
             <ImagePlus className="h-6 w-6" />
             Drag photos here
