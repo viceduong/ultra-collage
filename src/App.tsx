@@ -46,18 +46,20 @@ export default function App() {
       })
       .catch(console.error)
 
-    // Close handler: prevent default, show modal, then destroy on confirm.
-    let resolving = false
+    // Close handler: show modal, then close on confirm.
+    let isClosing = false
     import('@tauri-apps/api/window')
       .then(async ({ getCurrentWindow }) => {
         const unsub = await getCurrentWindow().onCloseRequested(async (event) => {
-          if (resolving) return
+          // Second invocation from our own close() — let through.
+          if (isClosing) return
           event.preventDefault()
-          resolving = true
 
           setShowSaveModal(true)
           const choice = await triggerSaveConfirm()
           setShowSaveModal(false)
+
+          if (choice === 'cancel') return
 
           if (choice === 'save') {
             const { saveDoc } = await import('@/state/persistence')
@@ -65,10 +67,8 @@ export default function App() {
             await saveDoc(doc)
           }
 
-          if (choice !== 'cancel') {
-            // Use destroy() to bypass any leftover close-prevention state.
-            await getCurrentWindow().destroy()
-          }
+          isClosing = true
+          await getCurrentWindow().close()
         })
         unlisteners.push(unsub)
       })

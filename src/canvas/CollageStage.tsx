@@ -289,15 +289,14 @@ function TextEditor({
         fontWeight: textLayer.fontStyle?.includes('bold') ? 'bold' : 'normal',
         textAlign: textLayer.align,
         color: textLayer.fill,
-        border: '2px solid #6366f1',
-        background: 'rgba(255,255,255,0.95)',
+        border: '1px dashed #6366f1',
+        background: 'transparent',
         outline: 'none',
         resize: 'none',
         overflow: 'hidden',
-        padding: '4px 6px',
-        borderRadius: 4,
+        padding: 0,
+        margin: 0,
         zIndex: 100,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
       }}
     />
   )

@@ -1,4 +1,4 @@
-import { Grid2x2, Image as ImageIcon, LayoutGrid, Palette, Shapes, SlidersHorizontal, Type } from 'lucide-react'
+import { Grid2x2, Image as ImageIcon, LayoutGrid, Shapes, SlidersHorizontal, Type } from 'lucide-react'
 import { useEditor, type RightTab } from '@/state/store'
 import { cn } from '@/lib/utils'
 import { TemplatesPanel } from './panels/TemplatesPanel'
@@ -11,7 +11,6 @@ import type { LayoutMode } from '@/types'
 
 const TABS: { id: RightTab; label: string; icon: typeof Grid2x2 }[] = [
   { id: 'templates', label: 'Layout', icon: LayoutGrid },
-  { id: 'background', label: 'Backdrop', icon: Palette },
   { id: 'text', label: 'Text', icon: Type },
   { id: 'filters', label: 'Filters', icon: SlidersHorizontal },
   { id: 'inspect', label: 'Edit', icon: ImageIcon },
@@ -48,9 +47,10 @@ export function RightPanel() {
           <>
             <TemplatesPanel />
             <StylePanel />
+            <div className="border-t border-border" />
+            <BackgroundPanel />
           </>
         )}
-        {tab === 'background' && <BackgroundPanel />}
         {tab === 'text' && <ElementsPanel />}
         {tab === 'filters' && <FiltersPanel />}
         {tab === 'inspect' && <InspectorPanel />}
