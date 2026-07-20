@@ -289,7 +289,8 @@ function TextEditor({
         fontWeight: textLayer.fontStyle?.includes('bold') ? 'bold' : 'normal',
         textAlign: textLayer.align,
         color: textLayer.fill,
-        border: '1px dashed #6366f1',
+        caretColor: textLayer.fill,
+        border: 'none',
         background: 'transparent',
         outline: 'none',
         resize: 'none',
@@ -297,6 +298,7 @@ function TextEditor({
         padding: 0,
         margin: 0,
         zIndex: 100,
+        cursor: 'text',
       }}
     />
   )

@@ -9,6 +9,7 @@ import { hasActiveFilters, konvaFilterAttrs, konvaFilters } from '@/features/fil
 import { fitCellImage } from './cellImage'
 import { clamp } from '@/lib/utils'
 import type { CellId, CollageStyle, FilterState } from '@/types'
+import { DEFAULT_FILTERS } from '@/types'
 
 interface CellNodeProps {
   layout: CellLayout
@@ -87,7 +88,10 @@ export function CellNode({ layout, style, selected, interactive, onSelect, cells
   const image = useImageElement(asset?.url)
   const imgRef = useRef<Konva.Image>(null)
 
-  const filters = style.cellFilters
+  // Filters apply only to the selected cell; when nothing is selected they apply globally.
+  const cellSelection = useEditor((s) => s.selection)
+  const applyFilters = cellSelection.kind !== 'cell' || cellSelection.id === cell?.id
+  const filters = applyFilters ? style.cellFilters : { ...DEFAULT_FILTERS }
   const placement = useMemo(() => {
     if (!cell || !asset) return null
     return fitCellImage(rect, { width: asset.width, height: asset.height }, cell.transform)
