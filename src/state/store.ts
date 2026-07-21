@@ -305,7 +305,7 @@ export const useEditor = create<EditorState>()(
             opacity: 1,
             locked: false,
             visible: true,
-            text: 'Double-click to edit',
+            text: 'Your text here',
             fontFamily: 'Inter',
             fontSize: 64,
             fontStyle: 'bold',
