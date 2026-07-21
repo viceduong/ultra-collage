@@ -131,7 +131,7 @@ function SaveConfirmModal() {
           </button>
           <button
             onClick={() => handle('cancel')}
-            className="w-full rounded-lg px-4 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors"
+            className="w-full rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors"
           >
             Cancel
           </button>

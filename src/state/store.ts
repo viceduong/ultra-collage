@@ -352,7 +352,18 @@ export const useEditor = create<EditorState>()(
           else arr.splice(Math.max(0, i - 1), 0, item)
         }),
 
-      select: (selection) => set((s) => void (s.selection = selection)),
+      select: (next) =>
+        set((s) => {
+          // Auto-remove empty text layers when deselected.
+          const prevSel = s.selection
+          if (prevSel.kind === 'layer') {
+            const prev = s.doc.freeLayers.find((l) => l.id === prevSel.id)
+            if (prev?.type === 'text' && !prev.text?.trim()) {
+              s.doc.freeLayers = s.doc.freeLayers.filter((l) => l.id !== prevSel.id)
+            }
+          }
+          s.selection = next
+        }),
       setRightTab: (rightTab) => set((s) => void (s.rightTab = rightTab)),
       startEditingText: (id) => set((s) => void (s.editingTextId = id)),
       stopEditingText: () => set((s) => void (s.editingTextId = null)),
