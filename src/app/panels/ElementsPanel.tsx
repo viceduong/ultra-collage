@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Bold, Italic, Type } from 'lucide-react'
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ColorField } from '@/components/ui/ColorField'
 import { useEditor } from '@/state/store'
 import { newId } from '@/lib/id'
-import { STICKER_GROUPS, FONT_FAMILIES } from '@/data/stickers'
+import { STICKER_GROUPS, FONT_FAMILIES, SOLID_PRESETS } from '@/data/stickers'
 import type { StickerLayer, TextLayer } from '@/types'
 import { cn } from '@/lib/utils'
+
+const ALIGN_ICONS = { left: AlignLeft, center: AlignCenter, right: AlignRight } as const
 
 /** Add text layers and emoji stickers as free layers. */
 export function ElementsPanel() {
@@ -22,6 +24,11 @@ export function ElementsPanel() {
   const selectedTextLayer = selection.kind === 'layer'
     ? doc.freeLayers.find((l) => l.id === selection.id && l.type === 'text') as TextLayer | undefined
     : undefined
+
+  // When a text layer is added, select it so the editor appears
+  const handleAddText = () => {
+    addText()
+  }
 
   const addSticker = (emoji: string) => {
     const c = center()
@@ -60,12 +67,20 @@ export function ElementsPanel() {
     <div>
       <div className="panel-section">
         <span className="panel-label">Text</span>
-        <Button variant="secondary" size="md" className="w-full" onClick={() => addText()}>
+        <Button variant="secondary" size="md" className="w-full" onClick={handleAddText}>
           <Type className="h-4 w-4" /> Add text
         </Button>
 
         {selectedTextLayer && (
           <div className="mt-3 space-y-3">
+            {/* Inline text editor */}
+            <textarea
+              value={selectedTextLayer.text}
+              onChange={(e) => updateLayer(selectedTextLayer.id, { text: e.target.value })}
+              className="h-20 w-full resize-none rounded-md border border-border bg-elevated p-2 text-sm outline-none focus:border-primary"
+              placeholder="Type here..."
+            />
+
             {/* Font family */}
             <div>
               <span className="text-xs text-muted-foreground">Font</span>
@@ -94,30 +109,42 @@ export function ElementsPanel() {
               <span className="text-xs text-muted-foreground">{selectedTextLayer.fontSize}px</span>
             </div>
 
-            {/* Style + alignment toggles — single row */}
+            {/* Style + alignment — evenly spaced */}
             <div className="flex gap-1">
-              <button
-                onClick={() => toggleStyle('bold')}
-                className={cn('rounded-md border px-2.5 py-1.5 text-sm transition-colors', hasStyle('bold') ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
-              ><Bold className="h-3.5 w-3.5" /></button>
-              <button
-                onClick={() => toggleStyle('italic')}
-                className={cn('rounded-md border px-2.5 py-1.5 text-sm transition-colors', hasStyle('italic') ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
-              ><Italic className="h-3.5 w-3.5" /></button>
-
-              <div className="mx-1 w-px bg-border" />
-
-              {(['left', 'center', 'right'] as const).map((a) => (
+              {[{ tag: 'bold', icon: Bold }, { tag: 'italic', icon: Italic }].map(({ tag, icon: Icon }) => (
                 <button
-                  key={a}
-                  onClick={() => updateLayer(selectedTextLayer.id, { align: a })}
-                  className={cn('rounded-md border px-2.5 py-1.5 text-xs capitalize transition-colors', selectedTextLayer.align === a ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
-                >{a === 'left' ? 'L' : a === 'center' ? 'C' : 'R'}</button>
+                  key={tag}
+                  onClick={() => toggleStyle(tag as 'bold' | 'italic')}
+                  className={cn('flex-1 rounded-md border py-1.5 text-sm transition-colors', hasStyle(tag) ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
+                ><Icon className="mx-auto h-3.5 w-3.5" /></button>
               ))}
+              <div className="mx-0.5 w-px bg-border" />
+              {(['left', 'center', 'right'] as const).map((a) => {
+                const Icon = ALIGN_ICONS[a]
+                return (
+                  <button
+                    key={a}
+                    onClick={() => updateLayer(selectedTextLayer.id, { align: a })}
+                    className={cn('flex-1 rounded-md border py-1.5 text-sm transition-colors', selectedTextLayer.align === a ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
+                  ><Icon className="mx-auto h-3.5 w-3.5" /></button>
+                )
+              })}
             </div>
 
-            {/* Color — using ColorField like background panel */}
-            <ColorField label="Color" value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
+            {/* Color — with presets like background panel */}
+            <div className="space-y-2">
+              <ColorField label="Color" value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
+              <div className="grid grid-cols-6 gap-1.5">
+                {SOLID_PRESETS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => updateLayer(selectedTextLayer.id, { fill: c })}
+                    className="aspect-square rounded border border-black/20"
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
