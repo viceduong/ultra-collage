@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ColorField } from '@/components/ui/ColorField'
@@ -26,6 +26,14 @@ export function ElementsPanel() {
     : undefined
 
   const handleAddText = () => { addText() }
+
+  // Stable callback ref: only fires on mount/unmount, not every render.
+  const focusRef = useCallback((el: HTMLTextAreaElement | null) => {
+    if (el) {
+      el.focus()
+      el.select()
+    }
+  }, [])
 
   const addSticker = (emoji: string) => {
     const c = center()
@@ -73,12 +81,8 @@ export function ElementsPanel() {
             {/* Inline text editor */}
             <textarea
               key={selectedTextLayer.id}
-              ref={(el) => {
-                if (el) {
-                  el.focus()
-                  el.select()
-                }
-              }}
+              ref={focusRef}
+              value={selectedTextLayer.text}
               onChange={(e) => updateLayer(selectedTextLayer.id, { text: e.target.value })}
               className="h-20 w-full resize-none rounded-md border border-border bg-elevated p-2 text-sm outline-none focus:border-primary"
               placeholder="Type here..."
