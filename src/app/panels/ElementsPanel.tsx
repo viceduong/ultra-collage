@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ColorField } from '@/components/ui/ColorField'
@@ -25,10 +25,20 @@ export function ElementsPanel() {
     ? doc.freeLayers.find((l) => l.id === selection.id && l.type === 'text') as TextLayer | undefined
     : undefined
 
-  // When a text layer is added, select it so the editor appears
-  const handleAddText = () => {
-    addText()
-  }
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-focus + highlight text when a text layer is selected.
+  useEffect(() => {
+    if (selectedTextLayer) {
+      const ta = textareaRef.current
+      if (ta) {
+        ta.focus()
+        ta.select()
+      }
+    }
+  }, [selectedTextLayer?.id])
+
+  const handleAddText = () => { addText() }
 
   const addSticker = (emoji: string) => {
     const c = center()
@@ -75,6 +85,7 @@ export function ElementsPanel() {
           <div className="mt-3 space-y-3">
             {/* Inline text editor */}
             <textarea
+              ref={textareaRef}
               value={selectedTextLayer.text}
               onChange={(e) => updateLayer(selectedTextLayer.id, { text: e.target.value })}
               className="h-20 w-full resize-none rounded-md border border-border bg-elevated p-2 text-sm outline-none focus:border-primary"
