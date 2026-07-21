@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Grid2x2, Image as ImageIcon, LayoutGrid, Shapes, SlidersHorizontal, Type } from 'lucide-react'
 import { useEditor, type RightTab } from '@/state/store'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,14 @@ const TABS: { id: RightTab; label: string; icon: typeof Grid2x2 }[] = [
 export function RightPanel() {
   const tab = useEditor((s) => s.rightTab)
   const setTab = useEditor((s) => s.setRightTab)
+  const selection = useEditor((s) => s.selection)
+
+  // Auto-switch to Text tab when a text layer is selected.
+  useEffect(() => {
+    if (selection.kind === 'layer') {
+      setTab('text')
+    }
+  }, [selection, setTab])
 
 
 
