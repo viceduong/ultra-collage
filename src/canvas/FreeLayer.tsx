@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Konva from 'konva'
 import { Ellipse, Image as KImage, Line, Rect as KRect, RegularPolygon, Star, Text, Transformer } from 'react-konva'
 import type { ImageLayer, Layer, LayerId, ShapeLayer, StickerLayer, TextLayer } from '@/types'
@@ -88,7 +88,35 @@ type CommonProps = Record<string, unknown>
 function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common: CommonProps; onTransformEnd: () => void }) {
   const updateLayer = useEditor((s) => s.updateLayer)
   const select = useEditor((s) => s.select)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(layer.text)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Begin editing on double-click.
+  const startEdit = useCallback(() => {
+    setDraft(layer.text)
+    setEditing(true)
+  }, [layer.text])
+
+  const commitEdit = useCallback(() => {
+    setEditing(false)
+    if (draft !== layer.text) {
+      updateLayer(layer.id, { text: draft })
+      select({ kind: 'layer', id: layer.id })
+    }
+  }, [draft, layer.text, layer.id, updateLayer, select])
+
+  // Auto-focus input when editing begins.
+  useEffect(() => {
+    if (editing) {
+      // Small delay so Konva event doesn't steal focus
+      const id = setTimeout(() => inputRef.current?.select(), 50)
+      return () => clearTimeout(id)
+    }
+  }, [editing])
+
   return (
+    <>
     <Text
       {...common}
       text={layer.text}
@@ -106,14 +134,39 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
       shadowBlur={layer.shadow ? 8 : 0}
       shadowOffsetY={layer.shadow ? 3 : 0}
       onTransformEnd={onTransformEnd}
-      onDblClick={() => {
-        const next = window.prompt('Edit text', layer.text)
-        if (next != null) {
-          updateLayer(layer.id, { text: next })
-          select({ kind: 'layer', id: layer.id })
-        }
-      }}
+      onDblClick={startEdit}
     />
+    {editing && (
+      <input
+        ref={inputRef}
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commitEdit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commitEdit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 200,
+          width: 320,
+          padding: '10px 14px',
+          fontSize: 16,
+          border: '2px solid #6366f1',
+          borderRadius: 8,
+          outline: 'none',
+          background: '#fff',
+          color: '#111',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
+        }}
+        autoFocus
+      />
+    )}
+    </>
   )
 }
 

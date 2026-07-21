@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Bold, Italic, Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ColorField } from '@/components/ui/ColorField'
 import { useEditor } from '@/state/store'
 import { newId } from '@/lib/id'
 import { STICKER_GROUPS, FONT_FAMILIES } from '@/data/stickers'
@@ -93,7 +94,7 @@ export function ElementsPanel() {
               <span className="text-xs text-muted-foreground">{selectedTextLayer.fontSize}px</span>
             </div>
 
-            {/* Style toggles */}
+            {/* Style + alignment toggles — single row */}
             <div className="flex gap-1">
               <button
                 onClick={() => toggleStyle('bold')}
@@ -103,29 +104,20 @@ export function ElementsPanel() {
                 onClick={() => toggleStyle('italic')}
                 className={cn('rounded-md border px-2.5 py-1.5 text-sm transition-colors', hasStyle('italic') ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
               ><Italic className="h-3.5 w-3.5" /></button>
-            </div>
 
-            {/* Alignment */}
-            <div className="flex gap-1">
+              <div className="mx-1 w-px bg-border" />
+
               {(['left', 'center', 'right'] as const).map((a) => (
                 <button
                   key={a}
                   onClick={() => updateLayer(selectedTextLayer.id, { align: a })}
-                  className={cn('flex-1 rounded-md border px-2 py-1 text-xs capitalize transition-colors', selectedTextLayer.align === a ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
-                >{a}</button>
+                  className={cn('rounded-md border px-2.5 py-1.5 text-xs capitalize transition-colors', selectedTextLayer.align === a ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
+                >{a === 'left' ? 'L' : a === 'center' ? 'C' : 'R'}</button>
               ))}
             </div>
 
-            {/* Color */}
-            <div>
-              <span className="text-xs text-muted-foreground">Color</span>
-              <input
-                type="color"
-                value={selectedTextLayer.fill}
-                onChange={(e) => updateLayer(selectedTextLayer.id, { fill: e.target.value })}
-                className="mt-1 h-8 w-full cursor-pointer rounded-md border border-border bg-elevated"
-              />
-            </div>
+            {/* Color — using ColorField like background panel */}
+            <ColorField label="Color" value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
           </div>
         )}
       </div>
