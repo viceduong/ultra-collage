@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ColorField } from '@/components/ui/ColorField'
@@ -24,17 +24,6 @@ export function ElementsPanel() {
   const selectedTextLayer = selection.kind === 'layer'
     ? doc.freeLayers.find((l) => l.id === selection.id && l.type === 'text') as TextLayer | undefined
     : undefined
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // Auto-highlight text when text layer selection changes.
-  useEffect(() => {
-    const ta = textareaRef.current
-    if (ta) {
-      ta.focus()
-      ta.select()
-    }
-  }, [selectedTextLayer?.id])
 
   const handleAddText = () => { addText() }
 
@@ -84,9 +73,12 @@ export function ElementsPanel() {
             {/* Inline text editor */}
             <textarea
               key={selectedTextLayer.id}
-              ref={textareaRef}
-              value={selectedTextLayer.text}
-              autoFocus
+              ref={(el) => {
+                if (el) {
+                  el.focus()
+                  el.select()
+                }
+              }}
               onChange={(e) => updateLayer(selectedTextLayer.id, { text: e.target.value })}
               className="h-20 w-full resize-none rounded-md border border-border bg-elevated p-2 text-sm outline-none focus:border-primary"
               placeholder="Type here..."
