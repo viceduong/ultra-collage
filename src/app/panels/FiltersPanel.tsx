@@ -9,10 +9,11 @@ import { cn } from '@/lib/utils'
 export function FiltersPanel() {
   const selection = useEditor((s) => s.selection)
   const tree = useEditor((s) => s.doc.layout.tree)
+  const style = useEditor((s) => s.doc.style)
   const setCellFilters = useEditor((s) => s.setCellFilters)
 
   const cell = selection.kind === 'cell' ? findCell(tree, selection.id) : null
-  const filters = cell?.filters ?? { ...DEFAULT_FILTERS }
+  const filters = cell?.filters ?? style.cellFilters
   const reset = () => setCellFilters({ ...DEFAULT_FILTERS })
 
   return (
