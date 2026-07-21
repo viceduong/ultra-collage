@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ColorField } from '@/components/ui/ColorField'
@@ -27,13 +27,26 @@ export function ElementsPanel() {
 
   const handleAddText = () => { addText() }
 
-  // Stable callback ref: only fires on mount/unmount, not every render.
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // Stable callback ref: sync ref + focus on mount.
   const focusRef = useCallback((el: HTMLTextAreaElement | null) => {
+    textareaRef.current = el
     if (el) {
       el.focus()
-      el.select()
+      requestAnimationFrame(() => el.select())
     }
   }, [])
+
+  // Re-select text when same layer is re-selected (selection object changes).
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (ta) {
+      ta.focus()
+      ta.select()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTextLayer?.id, selection])
 
   const addSticker = (emoji: string) => {
     const c = center()
