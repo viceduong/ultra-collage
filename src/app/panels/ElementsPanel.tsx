@@ -27,14 +27,12 @@ export function ElementsPanel() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-focus + highlight text when a text layer is selected.
+  // Auto-highlight text when text layer selection changes.
   useEffect(() => {
-    if (selectedTextLayer) {
-      const ta = textareaRef.current
-      if (ta) {
-        ta.focus()
-        ta.select()
-      }
+    const ta = textareaRef.current
+    if (ta) {
+      ta.focus()
+      ta.select()
     }
   }, [selectedTextLayer?.id])
 
@@ -85,8 +83,10 @@ export function ElementsPanel() {
           <div className="mt-3 space-y-3">
             {/* Inline text editor */}
             <textarea
+              key={selectedTextLayer.id}
               ref={textareaRef}
               value={selectedTextLayer.text}
+              autoFocus
               onChange={(e) => updateLayer(selectedTextLayer.id, { text: e.target.value })}
               className="h-20 w-full resize-none rounded-md border border-border bg-elevated p-2 text-sm outline-none focus:border-primary"
               placeholder="Type here..."
