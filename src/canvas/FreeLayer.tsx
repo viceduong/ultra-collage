@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Konva from 'konva'
 import { Ellipse, Group, Image as KImage, Line, Rect as KRect, RegularPolygon, Star, Text, Transformer } from 'react-konva'
 import type { ImageLayer, Layer, LayerId, ShapeLayer, StickerLayer, TextLayer } from '@/types'
@@ -94,7 +94,8 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
   const cr = layer.backgroundCornerRadius ?? 8
 
   // Track actual rendered text height for background sizing.
-  useEffect(() => {
+  // useLayoutEffect fires before paint — no one-frame glitch on new lines.
+  useLayoutEffect(() => {
     const node = textRef.current
     if (node) {
       const h = node.getHeight()
