@@ -253,10 +253,6 @@ export function ElementsPanel() {
                   </div>
                 </div>
               )}
-
-              {selectedTextLayer.background && (
-                <Slider label="Padding" min={0} max={40} value={selectedTextLayer.backgroundPadding ?? 12} unit="px" onChange={(backgroundPadding) => updateLayer(selectedTextLayer.id, { backgroundPadding })} />
-              )}
             </div>
           </div>
         )}

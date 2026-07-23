@@ -87,14 +87,21 @@ type CommonProps = Record<string, unknown>
 
 function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common: CommonProps; onTransformEnd: () => void }) {
   const select = useEditor((s) => s.select)
+  const textRef = useRef<Konva.Text>(null)
+  const [textH, setTextH] = useState(layer.height)
   const bg = layer.background
   const pad = layer.backgroundPadding ?? 12
   const cr = layer.backgroundCornerRadius ?? 8
 
-  // Estimate total text height including soft wrapping.
-  // layer.height is 80px default; wrapped text can exceed it.
-  const estLines = Math.ceil((layer.text.length * layer.fontSize * 0.5) / layer.width) || 1
-  const textH = layer.fontSize * layer.lineHeight * estLines * 1.4
+  // Track actual rendered text height for background sizing.
+  useEffect(() => {
+    const node = textRef.current
+    if (node) {
+      const h = node.getHeight()
+      if (h > 0 && h !== textH) setTextH(h)
+    }
+  })
+
   const bgH = Math.max(layer.height, textH)
 
   return (
@@ -111,6 +118,7 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
         />
       )}
       <Text
+        ref={textRef}
         x={0}
         y={0}
         text={layer.text}
