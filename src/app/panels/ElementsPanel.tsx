@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from 'lucide-react'
+import { Type } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ColorField } from '@/components/ui/ColorField'
+import { Slider } from '@/components/ui/Slider'
 import { useEditor } from '@/state/store'
 import { newId } from '@/lib/id'
-import { STICKER_GROUPS, FONT_FAMILIES, SOLID_PRESETS } from '@/data/stickers'
+import { STICKER_GROUPS, FONT_FAMILIES, SOLID_PRESETS, GRADIENT_PRESETS } from '@/data/stickers'
 import type { StickerLayer, TextLayer } from '@/types'
 import { cn } from '@/lib/utils'
-
-const ALIGN_ICONS = { left: AlignLeft, center: AlignCenter, right: AlignRight } as const
 
 /** Add text layers and emoji stickers as free layers. */
 export function ElementsPanel() {
@@ -29,7 +28,6 @@ export function ElementsPanel() {
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-  // Stable callback ref: sync ref + focus on mount.
   const focusRef = useCallback((el: HTMLTextAreaElement | null) => {
     textareaRef.current = el
     if (el) {
@@ -38,7 +36,6 @@ export function ElementsPanel() {
     }
   }, [])
 
-  // Re-select text when same layer is re-selected (selection object changes).
   useEffect(() => {
     const ta = textareaRef.current
     if (ta) {
@@ -66,21 +63,6 @@ export function ElementsPanel() {
     addLayer(layer)
   }
 
-  const toggleStyle = (style: 'bold' | 'italic') => {
-    if (!selectedTextLayer) return
-    const cur = selectedTextLayer.fontStyle ?? ''
-    const has = cur === style || cur.includes(style)
-    if (has) {
-      const next = cur.split(' ').filter((s) => s !== style).join(' ').trim()
-      updateLayer(selectedTextLayer.id, { fontStyle: (next || undefined) as TextLayer['fontStyle'] })
-    } else {
-      const next = cur ? `${cur} ${style}` : style
-      updateLayer(selectedTextLayer.id, { fontStyle: next as TextLayer['fontStyle'] })
-    }
-  }
-
-  const hasStyle = (s: string) => selectedTextLayer?.fontStyle?.includes(s) ?? false
-
   return (
     <div>
       <div className="panel-section">
@@ -97,88 +79,89 @@ export function ElementsPanel() {
               ref={focusRef}
               value={selectedTextLayer.text}
               onChange={(e) => updateLayer(selectedTextLayer.id, { text: e.target.value })}
-              className="h-20 w-full resize-none rounded-md border border-border bg-elevated p-2 text-sm outline-none focus:border-primary"
-              placeholder="Type here..."
+              rows={2}
+              className="w-full resize-none rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
             />
 
             {/* Font family */}
-            <div>
-              <span className="text-xs text-muted-foreground">Font</span>
+            <select
+              value={selectedTextLayer.fontFamily}
+              onChange={(e) => updateLayer(selectedTextLayer.id, { fontFamily: e.target.value })}
+              className="w-full rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
+            >
+              {FONT_FAMILIES.map((f) => (
+                <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
+              ))}
+            </select>
+
+            {/* Style + align dropdowns */}
+            <div className="grid grid-cols-2 gap-2">
               <select
-                value={selectedTextLayer.fontFamily}
-                onChange={(e) => updateLayer(selectedTextLayer.id, { fontFamily: e.target.value })}
-                className="mt-1 w-full rounded-md border border-border bg-elevated px-2 py-1.5 text-sm"
+                value={selectedTextLayer.fontStyle ?? 'normal'}
+                onChange={(e) => updateLayer(selectedTextLayer.id, { fontStyle: e.target.value as TextLayer['fontStyle'] })}
+                className="rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
               >
-                {FONT_FAMILIES.map((f) => (
-                  <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
-                ))}
+                <option value="normal">Regular</option>
+                <option value="bold">Bold</option>
+                <option value="italic">Italic</option>
+                <option value="italic bold">Bold Italic</option>
+              </select>
+              <select
+                value={selectedTextLayer.align ?? 'left'}
+                onChange={(e) => updateLayer(selectedTextLayer.id, { align: e.target.value as TextLayer['align'] })}
+                className="rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
               </select>
             </div>
 
-            {/* Font size */}
-            <div>
-              <span className="text-xs text-muted-foreground">Size</span>
-              <input
-                type="range"
-                min={8}
-                max={200}
-                value={selectedTextLayer.fontSize}
-                onChange={(e) => updateLayer(selectedTextLayer.id, { fontSize: Number(e.target.value) })}
-                className="mt-1 w-full accent-primary"
-              />
-              <span className="text-xs text-muted-foreground">{selectedTextLayer.fontSize}px</span>
-            </div>
+            {/* Size */}
+            <Slider label="Size" min={12} max={240} value={selectedTextLayer.fontSize} unit="px" onChange={(fontSize) => updateLayer(selectedTextLayer.id, { fontSize })} />
 
-            {/* Style + alignment — evenly spaced */}
-            <div className="flex gap-1">
-              {[{ tag: 'bold', icon: Bold }, { tag: 'italic', icon: Italic }].map(({ tag, icon: Icon }) => (
+            {/* Letter spacing */}
+            <Slider label="Letter spacing" min={-5} max={30} value={selectedTextLayer.letterSpacing} onChange={(letterSpacing) => updateLayer(selectedTextLayer.id, { letterSpacing })} />
+
+            {/* Text color */}
+            <ColorField label="Color" value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
+
+            {/* Drop shadow */}
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input type="checkbox" checked={!!selectedTextLayer.shadow} onChange={(e) => updateLayer(selectedTextLayer.id, { shadow: e.target.checked })} className="accent-primary" />
+              Drop shadow
+            </label>
+
+            {/* Background — tabbed like Layout background */}
+            <div className="rounded-lg bg-elevated p-1">
+              {([
+                { id: 'none' as const, label: 'None' },
+                { id: 'solid' as const, label: 'Color' },
+                { id: 'gradient' as const, label: 'Gradient' },
+              ]).map((t) => (
                 <button
-                  key={tag}
-                  onClick={() => toggleStyle(tag as 'bold' | 'italic')}
-                  className={cn('flex-1 rounded-md border py-1.5 text-sm transition-colors', hasStyle(tag) ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
-                ><Icon className="mx-auto h-3.5 w-3.5" /></button>
+                  key={t.id}
+                  onClick={() => {
+                    if (t.id === 'solid') updateLayer(selectedTextLayer.id, { background: '#ffffff', backgroundPadding: 12, backgroundCornerRadius: 8 })
+                    else if (t.id === 'gradient') updateLayer(selectedTextLayer.id, { background: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', backgroundPadding: 12, backgroundCornerRadius: 8 })
+                    else updateLayer(selectedTextLayer.id, { background: undefined })
+                  }}
+                  className={cn(
+                    'flex-1 rounded-md px-1 py-1 text-xs font-medium transition-colors',
+                    !selectedTextLayer.background && t.id === 'none' ? 'bg-primary text-primary-foreground' : '',
+                    selectedTextLayer.background && t.id === 'solid' && !selectedTextLayer.background?.startsWith('linear') ? 'bg-primary text-primary-foreground' : '',
+                    selectedTextLayer.background?.startsWith('linear') && t.id === 'gradient' ? 'bg-primary text-primary-foreground' : '',
+                    (!selectedTextLayer.background && t.id !== 'none') || (selectedTextLayer.background && t.id === 'none') || (selectedTextLayer.background?.startsWith('linear') && t.id !== 'gradient') || (!selectedTextLayer.background?.startsWith('linear') && selectedTextLayer.background && t.id !== 'solid') ? 'text-muted-foreground hover:text-foreground' : '',
+                  )}
+                >
+                  {t.label}
+                </button>
               ))}
-              <div className="mx-0.5 w-px bg-border" />
-              {(['left', 'center', 'right'] as const).map((a) => {
-                const Icon = ALIGN_ICONS[a]
-                return (
-                  <button
-                    key={a}
-                    onClick={() => updateLayer(selectedTextLayer.id, { align: a })}
-                    className={cn('flex-1 rounded-md border py-1.5 text-sm transition-colors', selectedTextLayer.align === a ? 'border-primary bg-primary/15' : 'border-border hover:bg-accent')}
-                  ><Icon className="mx-auto h-3.5 w-3.5" /></button>
-                )
-              })}
             </div>
 
-            {/* Color — with presets like background panel */}
-            <div className="space-y-2">
-              <ColorField label="Color" value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
-              <div className="grid grid-cols-6 gap-1.5">
-                {SOLID_PRESETS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => updateLayer(selectedTextLayer.id, { fill: c })}
-                    className="aspect-square rounded border border-black/20"
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Text background toggle + color + padding */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Background</span>
-              <button
-                onClick={() => updateLayer(selectedTextLayer.id, { background: selectedTextLayer.background ? undefined : '#ffffff' })}
-                className={cn('rounded-md border px-3 py-1 text-xs transition-colors', selectedTextLayer.background ? 'border-primary bg-primary/15' : 'border-border text-muted-foreground hover:bg-accent')}
-              >
-                {selectedTextLayer.background ? 'On' : 'Off'}
-              </button>
-            </div>
-            {selectedTextLayer.background && (
+            {(selectedTextLayer.background && !selectedTextLayer.background.startsWith('linear')) && (
               <div className="space-y-2">
-                <ColorField label="Fill" value={selectedTextLayer.background} onChange={(fill) => updateLayer(selectedTextLayer.id, { background: fill })} />
+                <ColorField value={selectedTextLayer.background} onChange={(fill) => updateLayer(selectedTextLayer.id, { background: fill })} />
                 <div className="grid grid-cols-6 gap-1.5">
                   {SOLID_PRESETS.map((c) => (
                     <button
@@ -189,18 +172,26 @@ export function ElementsPanel() {
                     />
                   ))}
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={40}
-                  value={selectedTextLayer.backgroundPadding ?? 12}
-                  onChange={(e) => updateLayer(selectedTextLayer.id, { backgroundPadding: Number(e.target.value) })}
-                  className="w-full accent-primary"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Padding: {selectedTextLayer.backgroundPadding ?? 12}px</span>
+              </div>
+            )}
+
+            {selectedTextLayer.background?.startsWith('linear') && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {GRADIENT_PRESETS.map((g) => (
+                    <button
+                      key={g.from + g.to}
+                      onClick={() => updateLayer(selectedTextLayer.id, { background: `linear-gradient(135deg, ${g.from}, ${g.to})` })}
+                      className="aspect-[2] rounded border border-black/20"
+                      style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}
+                    />
+                  ))}
                 </div>
               </div>
+            )}
+
+            {selectedTextLayer.background && (
+              <Slider label="Padding" min={0} max={40} value={selectedTextLayer.backgroundPadding ?? 12} unit="px" onChange={(backgroundPadding) => updateLayer(selectedTextLayer.id, { backgroundPadding })} />
             )}
           </div>
         )}

@@ -16,8 +16,7 @@ import { Slider } from '@/components/ui/Slider'
 import { ColorField } from '@/components/ui/ColorField'
 import { useEditor, selectedLayer } from '@/state/store'
 import { findCell } from '@/layout/tree'
-import { FONT_FAMILIES } from '@/data/stickers'
-import type { ShapeLayer, TextLayer } from '@/types'
+import type { ShapeLayer } from '@/types'
 
 /** Context-sensitive editor for the current selection (cell or free layer). */
 export function InspectorPanel() {
@@ -150,62 +149,14 @@ function LayerInspector() {
         <Slider label="Rotation" min={-180} max={180} value={layer.rotation} unit="°" onChange={(rotation) => update(layer.id, { rotation })} />
       </div>
 
-      {layer.type === 'text' && <TextControls layer={layer} />}
+      {layer.type === 'text' && (
+        <div className="panel-section">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Edit your text layer in the <span className="font-semibold">Text</span> tab.
+          </p>
+        </div>
+      )}
       {layer.type === 'shape' && <ShapeControls layer={layer} />}
-    </div>
-  )
-}
-
-function TextControls({ layer }: { layer: TextLayer }) {
-  const update = useEditor((s) => s.updateLayer)
-  return (
-    <div className="panel-section space-y-3">
-      <span className="panel-label">Text</span>
-      <textarea
-        value={layer.text}
-        onChange={(e) => update(layer.id, { text: e.target.value })}
-        rows={2}
-        className="w-full resize-none rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
-      />
-      <select
-        value={layer.fontFamily}
-        onChange={(e) => update(layer.id, { fontFamily: e.target.value })}
-        className="w-full rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
-      >
-        {FONT_FAMILIES.map((f) => (
-          <option key={f} value={f}>
-            {f}
-          </option>
-        ))}
-      </select>
-      <div className="grid grid-cols-2 gap-2">
-        <select
-          value={layer.fontStyle}
-          onChange={(e) => update(layer.id, { fontStyle: e.target.value as TextLayer['fontStyle'] })}
-          className="rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
-        >
-          <option value="normal">Regular</option>
-          <option value="bold">Bold</option>
-          <option value="italic">Italic</option>
-          <option value="italic bold">Bold Italic</option>
-        </select>
-        <select
-          value={layer.align}
-          onChange={(e) => update(layer.id, { align: e.target.value as TextLayer['align'] })}
-          className="rounded-md border border-border bg-elevated px-2 py-1.5 text-sm focus:border-ring focus:outline-none"
-        >
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-        </select>
-      </div>
-      <Slider label="Size" min={12} max={240} value={layer.fontSize} unit="px" onChange={(fontSize) => update(layer.id, { fontSize })} />
-      <Slider label="Letter spacing" min={-5} max={30} value={layer.letterSpacing} onChange={(letterSpacing) => update(layer.id, { letterSpacing })} />
-      <ColorField label="Color" value={layer.fill} onChange={(fill) => update(layer.id, { fill })} />
-      <label className="flex cursor-pointer items-center gap-2 text-sm">
-        <input type="checkbox" checked={!!layer.shadow} onChange={(e) => update(layer.id, { shadow: e.target.checked })} className="accent-primary" />
-        Drop shadow
-      </label>
     </div>
   )
 }

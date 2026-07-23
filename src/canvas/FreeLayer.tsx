@@ -91,11 +91,6 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
   const pad = layer.backgroundPadding ?? 12
   const cr = layer.backgroundCornerRadius ?? 8
 
-  // Estimate text height from font size, lines, and line height
-  const lineCount = (layer.text.match(/\n/g) || []).length + 1
-  const textH = layer.fontSize * layer.lineHeight * lineCount
-  const bgH = textH + pad * 2
-
   return (
     <Group {...common}>
       {bg && (
@@ -103,7 +98,7 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
           x={-pad}
           y={-pad}
           width={layer.width + pad * 2}
-          height={bgH < layer.height ? layer.height : bgH}
+          height={layer.height + pad * 2}
           fill={bg}
           cornerRadius={cr}
           listening={false}
