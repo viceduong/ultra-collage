@@ -120,7 +120,74 @@ export function ElementsPanel() {
 
               <Slider label="Size" min={12} max={240} value={selectedTextLayer.fontSize} unit="px" onChange={(fontSize) => updateLayer(selectedTextLayer.id, { fontSize })} />
               <Slider label="Letter spacing" min={-5} max={30} value={selectedTextLayer.letterSpacing} onChange={(letterSpacing) => updateLayer(selectedTextLayer.id, { letterSpacing })} />
-              <ColorField label="Color" value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
+
+              {/* Opacity + Rotation */}
+              <Slider label="Opacity" min={0.1} max={1} step={0.05} value={selectedTextLayer.opacity} onChange={(opacity) => updateLayer(selectedTextLayer.id, { opacity })} />
+              <Slider label="Rotation" min={-180} max={180} value={selectedTextLayer.rotation} unit="°" onChange={(rotation) => updateLayer(selectedTextLayer.id, { rotation })} />
+            </div>
+
+            {/* ── Color (tabbed: Color / Gradient / None) ── */}
+            <div className="space-y-3">
+              <span className="panel-label !mb-0">Color</span>
+
+              <div className="flex gap-1 rounded-lg bg-elevated p-1">
+                {([
+                  { id: 'solid' as const, label: 'Color' },
+                  { id: 'gradient' as const, label: 'Gradient' },
+                  { id: 'none' as const, label: 'None' },
+                ]).map((t) => {
+                  const isGradient = selectedTextLayer.fill.startsWith('linear')
+                  const isActive =
+                    t.id === 'none' ? (selectedTextLayer.fill === '#111111') :
+                    t.id === 'solid' ? (!isGradient && selectedTextLayer.fill !== '#111111') :
+                    t.id === 'gradient' ? isGradient : false
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        if (t.id === 'solid') updateLayer(selectedTextLayer.id, { fill: '#ffffff' })
+                        else if (t.id === 'gradient') updateLayer(selectedTextLayer.id, { fill: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)' })
+                        else updateLayer(selectedTextLayer.id, { fill: '#111111' })
+                      }}
+                      className={cn(
+                        'flex-1 rounded-md px-1 py-1 text-xs font-medium transition-colors',
+                        isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {selectedTextLayer.fill && !selectedTextLayer.fill.startsWith('linear') && (
+                <div className="space-y-2">
+                  <ColorField value={selectedTextLayer.fill} onChange={(fill) => updateLayer(selectedTextLayer.id, { fill })} />
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {SOLID_PRESETS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => updateLayer(selectedTextLayer.id, { fill: c })}
+                        className="aspect-square rounded border border-black/20"
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedTextLayer.fill?.startsWith('linear') && (
+                <div className="grid grid-cols-4 gap-1.5">
+                  {GRADIENT_PRESETS.map((g) => (
+                    <button
+                      key={g.from + g.to}
+                      onClick={() => updateLayer(selectedTextLayer.id, { fill: `linear-gradient(135deg, ${g.from}, ${g.to})` })}
+                      className="aspect-[2] rounded border border-black/20"
+                      style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}
+                    />
+                  ))}
+                </div>
+              )}
 
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!selectedTextLayer.shadow} onChange={(e) => updateLayer(selectedTextLayer.id, { shadow: e.target.checked })} className="accent-primary" />

@@ -91,6 +91,12 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
   const pad = layer.backgroundPadding ?? 12
   const cr = layer.backgroundCornerRadius ?? 8
 
+  // Estimate total text height including soft wrapping.
+  // layer.height is 80px default; wrapped text can exceed it.
+  const estLines = Math.ceil((layer.text.length * (layer.fontSize * 0.6)) / layer.width) || 1
+  const textH = layer.fontSize * layer.lineHeight * Math.max(estLines, 1)
+  const bgH = Math.max(layer.height, textH)
+
   return (
     <Group {...common}>
       {bg && (
@@ -98,7 +104,7 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
           x={-pad}
           y={-pad}
           width={layer.width + pad * 2}
-          height={layer.height + pad * 2}
+          height={bgH + pad * 2}
           fill={bg}
           cornerRadius={cr}
           listening={false}
