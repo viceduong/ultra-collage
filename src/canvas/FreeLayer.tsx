@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Konva from 'konva'
-import { Ellipse, Image as KImage, Line, Path, Rect as KRect, RegularPolygon, Star, Text, Transformer } from 'react-konva'
+import { Ellipse, Image as KImage, Line, Rect as KRect, RegularPolygon, Star, Text, Transformer } from 'react-konva'
 import type { ImageLayer, Layer, LayerId, ShapeLayer, StickerLayer, TextLayer } from '@/types'
 import { useEditor } from '@/state/store'
 import { useImageElement } from '@/features/images/useImageElement'
@@ -138,13 +138,32 @@ function ShapeNode({ layer, common, onTransformEnd }: { layer: ShapeLayer; commo
 }
 
 function StickerNode({ layer, common, onTransformEnd }: { layer: StickerLayer; common: CommonProps; onTransformEnd: () => void }) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
+  const size = Math.min(layer.width, layer.height)
+
+  useEffect(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = layer.width
+    canvas.height = layer.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, layer.width, layer.height)
+    ctx.font = `${size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(layer.emoji ?? '★', layer.width / 2, layer.height / 2)
+    const dataUrl = canvas.toDataURL()
+    const img = new window.Image()
+    img.onload = () => setImage(img)
+    img.src = dataUrl
+  }, [layer.emoji, layer.width, layer.height, size])
+
+  if (!image) return null
+
   return (
-    <Path
+    <KImage
       {...common}
-      data={layer.path}
-      fill={layer.fill ?? '#111'}
-      stroke={layer.stroke ?? undefined}
-      strokeWidth={layer.strokeWidth ?? 0}
+      image={image}
       width={layer.width}
       height={layer.height}
       onTransformEnd={onTransformEnd}

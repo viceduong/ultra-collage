@@ -96,13 +96,8 @@ export interface ShapeLayer extends BaseLayer {
 
 export interface StickerLayer extends BaseLayer {
   type: 'sticker'
-  /** SVG path data for the sticker glyph. */
-  path: string
-  /** Fill color (defaults to currentColor / #111). */
-  fill?: string
-  /** Stroke color (optional outline). */
-  stroke?: string
-  strokeWidth?: number
+  /** An emoji glyph rendered as text, or an svg/data url. */
+  emoji?: string
 }
 
 export interface ImageLayer extends BaseLayer {

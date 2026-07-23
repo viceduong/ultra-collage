@@ -5,7 +5,6 @@ import { ColorField } from '@/components/ui/ColorField'
 import { useEditor } from '@/state/store'
 import { newId } from '@/lib/id'
 import { STICKER_GROUPS, FONT_FAMILIES, SOLID_PRESETS } from '@/data/stickers'
-import type { StickerGlyph } from '@/data/stickers'
 import type { StickerLayer, TextLayer } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -49,13 +48,12 @@ export function ElementsPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTextLayer?.id, selection])
 
-  const addSticker = (glyph: StickerGlyph) => {
+  const addSticker = (emoji: string) => {
     const c = center()
     const layer: StickerLayer = {
       id: newId('layer'),
       type: 'sticker',
-      path: glyph.path,
-      fill: glyph.fill,
+      emoji,
       x: c.x,
       y: c.y,
       width: 140,
@@ -184,17 +182,10 @@ export function ElementsPanel() {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {STICKER_GROUPS[group].stickers.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => addSticker(g)}
-              className="grid aspect-square place-items-center rounded-md border border-border bg-elevated p-2 hover:border-primary transition-colors"
-              title={g.label}
-            >
-              <svg viewBox="0 0 24 24" className="h-8 w-8">
-                <path d={g.path} fill={g.fill} />
-              </svg>
+        <div className="grid grid-cols-6 gap-1">
+          {STICKER_GROUPS[group].emojis.map((e) => (
+            <button key={e} onClick={() => addSticker(e)} className="grid aspect-square place-items-center rounded text-xl hover:bg-accent">
+              {e}
             </button>
           ))}
         </div>

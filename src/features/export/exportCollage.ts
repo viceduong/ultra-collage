@@ -114,13 +114,7 @@ async function buildLayer(parent: Konva.Layer, layer: Layer, doc: CollageDoc) {
     )
   } else if (layer.type === 'sticker') {
     parent.add(
-      new Konva.Path({
-        ...base,
-        data: layer.path,
-        fill: layer.fill ?? '#111',
-        stroke: layer.stroke,
-        strokeWidth: layer.strokeWidth,
-      }),
+      new Konva.Text({ ...base, text: layer.emoji ?? '★', fontSize: Math.min(layer.width, layer.height), width: layer.width, align: 'center', verticalAlign: 'middle' }),
     )
   } else if (layer.type === 'shape') {
     const common = { ...base, fill: layer.fill, stroke: layer.stroke, strokeWidth: layer.strokeWidth }
