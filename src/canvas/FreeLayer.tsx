@@ -93,8 +93,8 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
 
   // Estimate total text height including soft wrapping.
   // layer.height is 80px default; wrapped text can exceed it.
-  const estLines = Math.ceil((layer.text.length * (layer.fontSize * 0.6)) / layer.width) || 1
-  const textH = layer.fontSize * layer.lineHeight * Math.max(estLines, 1)
+  const estLines = Math.ceil((layer.text.length * layer.fontSize * 0.5) / layer.width) || 1
+  const textH = layer.fontSize * layer.lineHeight * estLines * 1.4
   const bgH = Math.max(layer.height, textH)
 
   return (

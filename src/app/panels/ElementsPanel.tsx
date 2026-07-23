@@ -134,20 +134,15 @@ export function ElementsPanel() {
                 {([
                   { id: 'solid' as const, label: 'Color' },
                   { id: 'gradient' as const, label: 'Gradient' },
-                  { id: 'none' as const, label: 'None' },
                 ]).map((t) => {
                   const isGradient = selectedTextLayer.fill.startsWith('linear')
-                  const isActive =
-                    t.id === 'none' ? (selectedTextLayer.fill === '#111111') :
-                    t.id === 'solid' ? (!isGradient && selectedTextLayer.fill !== '#111111') :
-                    t.id === 'gradient' ? isGradient : false
+                  const isActive = t.id === 'solid' ? !isGradient : isGradient
                   return (
                     <button
                       key={t.id}
                       onClick={() => {
                         if (t.id === 'solid') updateLayer(selectedTextLayer.id, { fill: '#ffffff' })
-                        else if (t.id === 'gradient') updateLayer(selectedTextLayer.id, { fill: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)' })
-                        else updateLayer(selectedTextLayer.id, { fill: '#111111' })
+                        else updateLayer(selectedTextLayer.id, { fill: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)' })
                       }}
                       className={cn(
                         'flex-1 rounded-md px-1 py-1 text-xs font-medium transition-colors',
