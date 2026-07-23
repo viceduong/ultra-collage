@@ -81,6 +81,12 @@ export interface TextLayer extends BaseLayer {
   stroke?: string
   strokeWidth?: number
   shadow?: boolean
+  /** Background color behind the text (undefined = transparent). */
+  background?: string
+  /** Padding around the text. */
+  backgroundPadding?: number
+  /** Corner radius of the background pill/rect. */
+  backgroundCornerRadius?: number
 }
 
 export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'star' | 'heart' | 'line'

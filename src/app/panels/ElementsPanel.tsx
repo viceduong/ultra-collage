@@ -165,6 +165,43 @@ export function ElementsPanel() {
                 ))}
               </div>
             </div>
+
+            {/* Text background toggle + color + padding */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Background</span>
+              <button
+                onClick={() => updateLayer(selectedTextLayer.id, { background: selectedTextLayer.background ? undefined : '#ffffff' })}
+                className={cn('rounded-md border px-3 py-1 text-xs transition-colors', selectedTextLayer.background ? 'border-primary bg-primary/15' : 'border-border text-muted-foreground hover:bg-accent')}
+              >
+                {selectedTextLayer.background ? 'On' : 'Off'}
+              </button>
+            </div>
+            {selectedTextLayer.background && (
+              <div className="space-y-2">
+                <ColorField label="Fill" value={selectedTextLayer.background} onChange={(fill) => updateLayer(selectedTextLayer.id, { background: fill })} />
+                <div className="grid grid-cols-6 gap-1.5">
+                  {SOLID_PRESETS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => updateLayer(selectedTextLayer.id, { background: c })}
+                      className="aspect-square rounded border border-black/20"
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={40}
+                  value={selectedTextLayer.backgroundPadding ?? 12}
+                  onChange={(e) => updateLayer(selectedTextLayer.id, { backgroundPadding: Number(e.target.value) })}
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Padding: {selectedTextLayer.backgroundPadding ?? 12}px</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

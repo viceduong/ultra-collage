@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Konva from 'konva'
-import { Ellipse, Image as KImage, Line, Rect as KRect, RegularPolygon, Star, Text, Transformer } from 'react-konva'
+import { Ellipse, Group, Image as KImage, Line, Rect as KRect, RegularPolygon, Star, Text, Transformer } from 'react-konva'
 import type { ImageLayer, Layer, LayerId, ShapeLayer, StickerLayer, TextLayer } from '@/types'
 import { useEditor } from '@/state/store'
 import { useImageElement } from '@/features/images/useImageElement'
@@ -87,26 +87,49 @@ type CommonProps = Record<string, unknown>
 
 function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common: CommonProps; onTransformEnd: () => void }) {
   const select = useEditor((s) => s.select)
+  const bg = layer.background
+  const pad = layer.backgroundPadding ?? 12
+  const cr = layer.backgroundCornerRadius ?? 8
+
+  // Estimate text height from font size, lines, and line height
+  const lineCount = (layer.text.match(/\n/g) || []).length + 1
+  const textH = layer.fontSize * layer.lineHeight * lineCount
+  const bgH = textH + pad * 2
+
   return (
-    <Text
-      {...common}
-      text={layer.text}
-      width={layer.width}
-      fontFamily={layer.fontFamily}
-      fontSize={layer.fontSize}
-      fontStyle={layer.fontStyle}
-      fill={layer.fill}
-      align={layer.align}
-      lineHeight={layer.lineHeight}
-      letterSpacing={layer.letterSpacing}
-      stroke={layer.stroke}
-      strokeWidth={layer.strokeWidth ?? 0}
-      shadowColor={layer.shadow ? 'rgba(0,0,0,0.35)' : undefined}
-      shadowBlur={layer.shadow ? 8 : 0}
-      shadowOffsetY={layer.shadow ? 3 : 0}
-      onTransformEnd={onTransformEnd}
-      onDblClick={() => select({ kind: 'layer', id: layer.id })}
-    />
+    <Group {...common}>
+      {bg && (
+        <KRect
+          x={-pad}
+          y={-pad}
+          width={layer.width + pad * 2}
+          height={bgH < layer.height ? layer.height : bgH}
+          fill={bg}
+          cornerRadius={cr}
+          listening={false}
+        />
+      )}
+      <Text
+        x={0}
+        y={0}
+        text={layer.text}
+        width={layer.width}
+        fontFamily={layer.fontFamily}
+        fontSize={layer.fontSize}
+        fontStyle={layer.fontStyle}
+        fill={layer.fill}
+        align={layer.align}
+        lineHeight={layer.lineHeight}
+        letterSpacing={layer.letterSpacing}
+        stroke={layer.stroke}
+        strokeWidth={layer.strokeWidth ?? 0}
+        shadowColor={layer.shadow ? 'rgba(0,0,0,0.35)' : undefined}
+        shadowBlur={layer.shadow ? 8 : 0}
+        shadowOffsetY={layer.shadow ? 3 : 0}
+        onTransformEnd={onTransformEnd}
+        onDblClick={() => select({ kind: 'layer', id: layer.id })}
+      />
+    </Group>
   )
 }
 
