@@ -6,6 +6,25 @@ import { fitCellImage } from '@/canvas/cellImage'
 import { hasActiveFilters, konvaFilterAttrs, konvaFilters } from '@/features/filters/filters'
 import type { Background, CollageDoc, FilterState, Layer } from '@/types'
 
+// ── Gradient helpers ────────────────────────────────────────────────────
+
+function parseGradient(s: string): { from: string; to: string } | null {
+  const m = s.match(/linear-gradient\([^,]+,\s*([^,]+),\s*([^)]+)\)/)
+  return m ? { from: m[1].trim(), to: m[2].trim() } : null
+}
+
+function gradientProps(w: number, h: number, s: string) {
+  const g = parseGradient(s)
+  if (!g) return null
+  const cx = w / 2, cy = h / 2
+  const d = Math.sqrt(w * w + h * h) / 2
+  return {
+    fillLinearGradientStartPoint: { x: cx - d * 0.707, y: cy - d * 0.707 },
+    fillLinearGradientEndPoint: { x: cx + d * 0.707, y: cy + d * 0.707 },
+    fillLinearGradientColorStops: [0, g.from, 1, g.to] as [number, string, number, string],
+  }
+}
+
 /**
  * Renders the document to a standalone offscreen Konva stage at a pixel
  * multiplier, fully independent of the on-screen zoom, then exports a raster.
@@ -93,6 +112,9 @@ async function buildLayer(parent: Konva.Layer, layer: Layer, doc: CollageDoc) {
   const base = { x: layer.x, y: layer.y, rotation: layer.rotation, opacity: layer.opacity }
 
   if (layer.type === 'text') {
+    const isGrad = layer.fill.startsWith('linear')
+    const g = isGrad ? parseGradient(layer.fill) : null
+    const grad = g ? gradientProps(layer.width, layer.height, layer.fill) : null
     parent.add(
       new Konva.Text({
         ...base,
@@ -101,7 +123,8 @@ async function buildLayer(parent: Konva.Layer, layer: Layer, doc: CollageDoc) {
         fontFamily: layer.fontFamily,
         fontSize: layer.fontSize,
         fontStyle: layer.fontStyle,
-        fill: layer.fill,
+        fill: isGrad ? undefined : layer.fill,
+        ...(grad ?? {}),
         align: layer.align,
         lineHeight: layer.lineHeight,
         letterSpacing: layer.letterSpacing,

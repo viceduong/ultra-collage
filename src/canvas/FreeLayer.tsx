@@ -6,6 +6,28 @@ import { useEditor } from '@/state/store'
 import { useImageElement } from '@/features/images/useImageElement'
 import { hasActiveFilters, konvaFilterAttrs, konvaFilters } from '@/features/filters/filters'
 
+// ── Gradient utilities ──────────────────────────────────────────────────────
+
+/** Parse 'linear-gradient(135deg, #from, #to)' → { from, to } or null. */
+function parseGradient(s: string): { from: string; to: string } | null {
+  const m = s.match(/linear-gradient\([^,]+,\s*([^,]+),\s*([^)]+)\)/)
+  return m ? { from: m[1].trim(), to: m[2].trim() } : null
+}
+
+/** Compute Konva fill gradient props for a shape of given size. */
+function gradientProps(w: number, h: number, s: string) {
+  const g = parseGradient(s)
+  if (!g) return null
+  // 135deg: top-left to bottom-right diagonal
+  const cx = w / 2, cy = h / 2
+  const d = Math.sqrt(w * w + h * h) / 2
+  return {
+    fillLinearGradientStartPoint: { x: cx - d * 0.707, y: cy - d * 0.707 },
+    fillLinearGradientEndPoint: { x: cx + d * 0.707, y: cy + d * 0.707 },
+    fillLinearGradientColorStops: [0, g.from, 1, g.to] as [number, string, number, string],
+  }
+}
+
 interface FreeLayerProps {
   layer: Layer
   selected: boolean
@@ -105,6 +127,11 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
 
   const bgH = Math.max(layer.height, textH)
 
+  const isFillGradient = layer.fill.startsWith('linear')
+  const fillGrad = isFillGradient ? gradientProps(layer.width, bgH, layer.fill) : null
+  const isBgGradient = bg?.startsWith('linear')
+  const bgGrad = isBgGradient ? gradientProps(layer.width + pad * 2, bgH + pad * 2, bg!) : null
+
   return (
     <Group {...common}>
       {bg && (
@@ -113,9 +140,10 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
           y={-pad}
           width={layer.width + pad * 2}
           height={bgH + pad * 2}
-          fill={bg}
+          fill={isBgGradient ? undefined : bg}
           cornerRadius={cr}
           listening={false}
+          {...(bgGrad ?? {})}
         />
       )}
       <Text
@@ -127,7 +155,8 @@ function TextNode({ layer, common, onTransformEnd }: { layer: TextLayer; common:
         fontFamily={layer.fontFamily}
         fontSize={layer.fontSize}
         fontStyle={layer.fontStyle}
-        fill={layer.fill}
+        fill={isFillGradient ? undefined : layer.fill}
+        {...(fillGrad ?? {})}
         align={layer.align}
         lineHeight={layer.lineHeight}
         letterSpacing={layer.letterSpacing}
