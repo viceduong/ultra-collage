@@ -70,13 +70,17 @@ export function FreeLayer({ layer, selected, interactive, onSelect }: FreeLayerP
     const scaleY = node.scaleY()
     node.scaleX(1)
     node.scaleY(1)
-    updateLayer(layer.id, {
+    const patch: Record<string, number> = {
       x: node.x(),
       y: node.y(),
       rotation: node.rotation(),
       width: Math.max(8, layer.width * scaleX),
-      height: Math.max(8, layer.height * scaleY),
-    })
+    }
+    // Height auto-sizes for text — don't apply scale.
+    if (layer.type !== 'text') {
+      patch.height = Math.max(8, layer.height * scaleY)
+    }
+    updateLayer(layer.id, patch)
   }
 
   return (
