@@ -2,25 +2,24 @@ version: 1.0.0.{build}
 
 image: macos-monterey
 
-environment:
-  TARGET: x86_64-apple-darwin
-
 install:
   - nvm use 22 || nvm install 22
   - npm ci
   - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  - source $HOME/.cargo/env && rustup target add $TARGET
+  - source $HOME/.cargo/env && rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
 build_script:
   - source $HOME/.cargo/env
-  - npm run tauri build -- --target $TARGET --bundles dmg
-
-after_build:
   - mkdir -p dist
-  - cp "src-tauri/target/$TARGET/release/bundle/dmg/"*.dmg dist/
+  # Build Intel
+  - npm run tauri build -- --target x86_64-apple-darwin --bundles dmg
+  - cp "src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/"*.dmg "dist/UltraCollage-macOS-x86_64.dmg"
+  # Build Apple Silicon
+  - npm run tauri build -- --target aarch64-apple-darwin --bundles dmg
+  - cp "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/"*.dmg "dist/UltraCollage-macOS-arm64.dmg"
 
 artifacts:
   - path: dist/*.dmg
-    name: macOS-Intel
+    name: macOS
 
 deploy: off
