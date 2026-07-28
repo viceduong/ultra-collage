@@ -1,0 +1,54 @@
+version: 2.1
+
+commands:
+  setup-macos:
+    parameters:
+      target:
+        type: string
+    steps:
+      - checkout
+      - run: brew install node
+      - run: npm ci
+      - run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source "$HOME/.cargo/env"
+          rustup target add << parameters.target >>
+
+jobs:
+  build-dmg:
+    parameters:
+      target:
+        type: string
+      resource:
+        type: string
+    macos:
+      xcode: 16.2.0
+    resource_class: << parameters.resource >>
+    steps:
+      - setup-macos:
+          target: << parameters.target >>
+      - run: |
+          source "$HOME/.cargo/env"
+          npm run tauri build -- --target << parameters.target >> --bundles dmg
+      - store_artifacts:
+          path: src-tauri/target/<< parameters.target >>/release/bundle/dmg
+      - persist_to_workspace:
+          root: .
+          paths:
+            - src-tauri/target/<< parameters.target >>/release/bundle/dmg
+
+workflows:
+  release:
+    when:
+      matches:
+        pattern: "^v.*"
+        value: << pipeline.git.tag >>
+    jobs:
+      - build-dmg:
+          name: build-macos-x86_64
+          target: x86_64-apple-darwin
+          resource: macos.x86.medium.gen2
+      - build-dmg:
+          name: build-macos-arm64
+          target: aarch64-apple-darwin
+          resource: macos.m1.medium.gen2
