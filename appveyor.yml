@@ -10,16 +10,12 @@ install:
 
 build_script:
   - source $HOME/.cargo/env
+  - npm run tauri build -- --target universal-apple-darwin --bundles dmg
   - mkdir -p dist
-  # Build Intel
-  - npm run tauri build -- --target x86_64-apple-darwin --bundles dmg
-  - cp "src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/"*.dmg "dist/UltraCollage-macOS-x86_64.dmg"
-  # Build Apple Silicon
-  - npm run tauri build -- --target aarch64-apple-darwin --bundles dmg
-  - cp "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/"*.dmg "dist/UltraCollage-macOS-arm64.dmg"
+  - cp "src-tauri/target/universal-apple-darwin/release/bundle/dmg/"*.dmg dist/
 
 artifacts:
   - path: dist/*.dmg
-    name: macOS
+    name: macOS-Universal
 
 deploy: off
